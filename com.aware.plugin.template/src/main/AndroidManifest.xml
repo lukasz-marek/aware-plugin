@@ -38,5 +38,8 @@
             <meta-data android:name="android.content.SyncAdapter" android:resource="@xml/sync_template" />
         </service>
 
+        <service android:name="com.mbientlab.metawear.android.BtleService" />
+
+
     </application>
 </manifest>
