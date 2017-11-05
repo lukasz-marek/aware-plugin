@@ -8,7 +8,7 @@ project.ext {
     version_readable = "4.0." + version_code + "." + (System.getenv("aware_label") as String ?: "selfie")
     compile_sdk = (System.getenv("compile_sdk") as Integer ?: 26)
     target_sdk = (System.getenv("target_sdk") as Integer ?: 26)
-    minimum_sdk = (System.getenv("minimum_sdk") as Integer ?: 18)
+    minimum_sdk = (System.getenv("minimum_sdk") as Integer ?: 19)
     build_tools = (System.getenv("build_tools") ?: "26.0.2")
     aware_libs = (System.getenv("aware_libs") as String ?: "development-SNAPSHOT")
 }
