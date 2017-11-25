@@ -1,20 +1,31 @@
 package com.aware.plugin.template;
 
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 
 import com.aware.Accelerometer;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
 import com.aware.utils.Aware_Plugin;
+import com.mbientlab.metawear.android.BtleService;
 
-public class Plugin extends Aware_Plugin {
+public class Plugin extends Aware_Plugin implements ServiceConnection {
+
+    private BtleService.LocalBinder serviceBinder;
+
 
     @Override
     public void onCreate() {
         super.onCreate();
+
+        getApplicationContext().bindService(new Intent(this, BtleService.class),
+                this, Context.BIND_AUTO_CREATE);
 
         //This allows plugin data to be synced on demand from broadcast Aware#ACTION_AWARE_SYNC_DATA
         AUTHORITY = Provider.getAuthority(this);
@@ -48,6 +59,16 @@ public class Plugin extends Aware_Plugin {
     }
     public static AWARESensorObserver getSensorObserver() {
         return awareSensor;
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+        serviceBinder = (BtleService.LocalBinder) iBinder;
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) {
+
     }
 
     public interface AWARESensorObserver {
@@ -100,6 +121,7 @@ public class Plugin extends Aware_Plugin {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        getApplicationContext().unbindService(this);
 
         //Turn off the sync-adapter if part of a study
         if (Aware.isStudy(this) && (getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || getApplicationContext().getResources().getBoolean(R.bool.standalone))) {

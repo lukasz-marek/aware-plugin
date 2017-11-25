@@ -16,6 +16,9 @@
             android:exported="true"
             android:label="AWARE: Plugin Template" />
 
+        <service android:name="com.mbientlab.metawear.android.BtleService" />
+
+
         <activity
             android:name="com.aware.plugin.template.Settings"
             android:exported="true" />
@@ -35,7 +38,9 @@
             <intent-filter>
                 <action android:name="android.content.SyncAdapter" />
             </intent-filter>
-            <meta-data android:name="android.content.SyncAdapter" android:resource="@xml/sync_template" />
+            <meta-data
+                android:name="android.content.SyncAdapter"
+                android:resource="@xml/sync_template" />
         </service>
 
         <service android:name="com.mbientlab.metawear.android.BtleService" />
