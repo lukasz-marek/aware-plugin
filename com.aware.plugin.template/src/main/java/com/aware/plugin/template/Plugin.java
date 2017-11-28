@@ -1,5 +1,7 @@
 package com.aware.plugin.template;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -7,27 +9,36 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 
 import com.aware.Accelerometer;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
 import com.aware.utils.Aware_Plugin;
+import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.android.BtleService;
+
+import java.util.Set;
+import java.util.UUID;
 
 public class Plugin extends Aware_Plugin implements ServiceConnection {
 
     private BtleService.LocalBinder serviceBinder;
+    private Handler mHandler;
+    private BluetoothAdapter mBluetoothAdapter;
+    private volatile boolean mScanning;
 
 
     @Override
     public void onCreate() {
         super.onCreate();
+        mHandler = new Handler(Looper.getMainLooper());
 
         getApplicationContext().bindService(new Intent(this, BtleService.class),
                 this, Context.BIND_AUTO_CREATE);
 
-        //This allows plugin data to be synced on demand from broadcast Aware#ACTION_AWARE_SYNC_DATA
         AUTHORITY = Provider.getAuthority(this);
 
         TAG = "AWARE::"+getResources().getString(R.string.app_name);
@@ -137,5 +148,44 @@ public class Plugin extends Aware_Plugin implements ServiceConnection {
 
         //Stop AWARE instance in plugin
         Aware.stopAWARE(this);
+    }
+    private static final long SCAN_PERIOD = 10000;
+
+    private void scanLeDevice(final boolean enable) {
+        if (enable) {
+            // Stops scanning after a pre-defined scan period.
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mScanning = false;
+                    mBluetoothAdapter.stopLeScan(new BluetoothAdapter.LeScanCallback() {
+                        @Override
+                        public void onLeScan(BluetoothDevice bluetoothDevice, int i, byte[] bytes) {
+
+                        }
+                    });
+                }
+            }, SCAN_PERIOD);
+
+            mScanning = true;
+            mBluetoothAdapter.startLeScan(new UUID[]{MetaWearBoard.METAWEAR_GATT_SERVICE},new BluetoothAdapter.LeScanCallback() {
+                @Override
+                public void onLeScan(BluetoothDevice bluetoothDevice, int i, byte[] bytes) {
+                    connectWithBoard(bluetoothDevice.getAddress());
+                }
+            });
+        } else {
+            mScanning = false;
+            mBluetoothAdapter.stopLeScan(new BluetoothAdapter.LeScanCallback() {
+                @Override
+                public void onLeScan(BluetoothDevice bluetoothDevice, int i, byte[] bytes) {
+
+                }
+            });
+        }
+    }
+
+    private void connectWithBoard(String macAddress){
+
     }
 }
