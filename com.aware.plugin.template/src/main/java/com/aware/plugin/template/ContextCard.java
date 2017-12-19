@@ -25,7 +25,7 @@ public class ContextCard implements IContextCard {
         View card = LayoutInflater.from(context).inflate(R.layout.card, null);
         hello = card.findViewById(R.id.hello);
 
-        //Register the broadcast receiver that will update the UI from the background service (Plugin)
+        //Register the broadcast receiver that will update the UI from the background service (AwarePluginService)
         IntentFilter filter = new IntentFilter("ACCELEROMETER_DATA");
         context.registerReceiver(accelerometerObserver, filter);
 

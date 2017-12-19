@@ -22,6 +22,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
+        customDebugType {
+            debuggable true
+        }
     }
 
     lintOptions {
@@ -41,6 +44,10 @@ if (System.getenv("storeFile") != null && System.getenv("storePassword") != null
 
 repositories {
     maven { url 'https://jitpack.io' } //this allows library generation directly from GitHub source-code
+    ivy {
+        url "http://ivyrep.mbientlab.com"
+        layout "gradle"
+    }
 }
 
 configurations.all {
@@ -53,4 +60,5 @@ dependencies {
     implementation "com.android.support:appcompat-v7:$support_libs"
     implementation "com.android.support:gridlayout-v7:$support_libs"
     compile 'com.mbientlab:metawear:3.2.2'
+    compile 'com.mbientlab.bletoolbox:scanner:0.2.3'
 }
