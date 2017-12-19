@@ -49,5 +49,6 @@ public class ChooseDeviceActivity extends Activity implements BleScannerFragment
         editor.apply();
 
         MessageSender.sendMessage(Plugin.RECIPIENT_NAME, new DeviceSelectedMessage(deviceMacAddress));
+        this.finish();
     }
 }

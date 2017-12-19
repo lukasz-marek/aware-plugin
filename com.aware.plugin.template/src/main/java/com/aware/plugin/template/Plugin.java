@@ -2,11 +2,17 @@ package com.aware.plugin.template;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 
@@ -18,21 +24,27 @@ import com.aware.plugin.template.communication.WaitingMessageRecipient;
 import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.aware.plugin.template.communication.messages.Message;
 import com.aware.utils.Aware_Plugin;
+import com.mbientlab.metawear.MetaWearBoard;
+import com.mbientlab.metawear.android.BtleService;
 
-import java.util.Set;
-
-public class Plugin extends Aware_Plugin implements WaitingMessageRecipient{
+public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, ServiceConnection {
 
     public final static String RECIPIENT_NAME = Plugin.class.getName();
+
+    private BtleService.LocalBinder serviceBinder;
+
+    private MetaWearBoard board;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        getApplicationContext().bindService(new Intent(this, BtleService.class),
+                this, Context.BIND_AUTO_CREATE);
 
         //This allows plugin data to be synced on demand from broadcast Aware#ACTION_AWARE_SYNC_DATA
         AUTHORITY = Provider.getAuthority(this);
 
-        TAG = "AWARE::"+getResources().getString(R.string.app_name);
+        TAG = "AWARE::" + getResources().getString(R.string.app_name);
 
         /**
          * Plugins share their current status, i.e., context using this method.
@@ -56,25 +68,50 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient{
      * Allow callback to other applications when data is stored in provider
      */
     private static AWARESensorObserver awareSensor;
+
     public static void setSensorObserver(AWARESensorObserver observer) {
         awareSensor = observer;
     }
+
     public static AWARESensorObserver getSensorObserver() {
         return awareSensor;
     }
 
     @Override
     public void receiveMessage(Message message) {
-        if(Message.MessageType.DEVICE_SELECTED.equals(message.getMessageType())){
+        if (Message.MessageType.DEVICE_SELECTED.equals(message.getMessageType())) {
             MessageSender.discardIncomingMessages(this);
+
             final DeviceSelectedMessage deviceSelectedMessage = (DeviceSelectedMessage) message;
             final String deviceMacAddress = deviceSelectedMessage.getMacAddress();
+
+            synchronized (this) {
+                if (connectWithBoard(deviceMacAddress)) {
+                    initializeBoardListeners();
+                    createUnclickableNotification("Connection successful", "Data from MetaWearBoard is now recorded.");
+                } else {
+                    createUnclickableNotification("Error connecting with device", "AWARE was unable to connect with chosen device.");
+                }
+            }
+
+            MessageSender.waitForMessages(this);
         }
     }
 
     @Override
     public String getRecipientName() {
         return RECIPIENT_NAME;
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+        serviceBinder = (BtleService.LocalBinder) iBinder;
+
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) {
+
     }
 
     public interface AWARESensorObserver {
@@ -124,9 +161,8 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient{
                     .getDefaultSharedPreferences(this);
 
 
-
             final String deviceMacAddress = preferences.getString(ChooseDeviceActivity.SELECTED_MAC_ADDRESS_PREFERENCE_KEY, null);
-            if(null == deviceMacAddress){
+            if (null == deviceMacAddress) {
                 MessageSender.waitForMessages(this);
                 NotificationCompat.Builder mBuilder =
                         new NotificationCompat.Builder(this)
@@ -156,8 +192,9 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient{
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         MessageSender.discardIncomingMessages(this);
+        super.onDestroy();
+        getApplicationContext().unbindService(this);
 
 
         //Turn off the sync-adapter if part of a study
@@ -174,5 +211,40 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient{
 
         //Stop AWARE instance in plugin
         Aware.stopAWARE(this);
+    }
+
+    private boolean connectWithBoard(String macAddress) {
+        try {
+            final BluetoothManager btManager =
+                    (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+            if (btManager.getAdapter() != null) {
+                final BluetoothDevice remoteDevice =
+                        btManager.getAdapter().getRemoteDevice(macAddress);
+
+                this.board = serviceBinder.getMetaWearBoard(remoteDevice);
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void initializeBoardListeners() {
+
+    }
+
+    private void createUnclickableNotification(String title, String content) {
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(this)
+                        .setSmallIcon(R.drawable.ic_launcher)
+                        .setContentTitle(title)
+                        .setContentText(content);
+
+        int mNotificationId = 002;
+        NotificationManager mNotifyMgr =
+                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mNotifyMgr.notify(mNotificationId, mBuilder.build());
     }
 }
