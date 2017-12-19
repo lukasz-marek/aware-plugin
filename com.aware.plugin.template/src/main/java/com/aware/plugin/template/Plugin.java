@@ -1,14 +1,21 @@
 package com.aware.plugin.template;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
 
 import com.aware.Accelerometer;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
 import com.aware.utils.Aware_Plugin;
+
+import java.util.Set;
 
 public class Plugin extends Aware_Plugin {
 
@@ -92,6 +99,35 @@ public class Plugin extends Aware_Plugin {
 
             //Initialise AWARE instance in plugin
             Aware.startAWARE(this);
+
+            final SharedPreferences preferences = PreferenceManager
+                    .getDefaultSharedPreferences(this);
+
+
+
+            final String deviceMacAddress = preferences.getString(ChooseDeviceActivity.SELECTED_MAC_ADDRESS_PREFERENCE_KEY, null);
+            if(null == deviceMacAddress){
+                NotificationCompat.Builder mBuilder =
+                        new NotificationCompat.Builder(this)
+                                .setSmallIcon(R.drawable.ic_launcher)
+                                .setContentTitle("No device selected")
+                                .setContentText("Click here to select a MetaWear device.");
+
+                Intent resultIntent = new Intent(this, ChooseDeviceActivity.class);
+
+                PendingIntent resultPendingIntent =
+                        PendingIntent.getActivity(
+                                this,
+                                0,
+                                resultIntent,
+                                PendingIntent.FLAG_UPDATE_CURRENT
+                        );
+                mBuilder.setContentIntent(resultPendingIntent);
+                int mNotificationId = 001;
+                NotificationManager mNotifyMgr =
+                        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                mNotifyMgr.notify(mNotificationId, mBuilder.build());
+            }
         }
 
         return START_STICKY;

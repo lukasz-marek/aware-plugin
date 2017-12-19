@@ -2,7 +2,9 @@ package com.aware.plugin.template;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 
 import com.mbientlab.bletoolbox.scanner.BleScannerFragment;
 import com.mbientlab.metawear.MetaWearBoard;
@@ -14,6 +16,8 @@ import java.util.UUID;
  */
 
 public class ChooseDeviceActivity extends Activity implements BleScannerFragment.ScannerCommunicationBus {
+
+    public final static String SELECTED_MAC_ADDRESS_PREFERENCE_KEY = "DEVICE_MAC_ADDRESS";
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,6 +37,11 @@ public class ChooseDeviceActivity extends Activity implements BleScannerFragment
 
     @Override
     public void onDeviceSelected(BluetoothDevice device) {
+        SharedPreferences preferences = PreferenceManager
+                .getDefaultSharedPreferences(this);
 
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putString(SELECTED_MAC_ADDRESS_PREFERENCE_KEY, device.getAddress());
+        editor.apply();
     }
 }
