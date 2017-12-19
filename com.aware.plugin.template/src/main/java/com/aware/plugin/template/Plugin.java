@@ -13,11 +13,17 @@ import android.support.v4.app.NotificationCompat;
 import com.aware.Accelerometer;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
+import com.aware.plugin.template.communication.MessageSender;
+import com.aware.plugin.template.communication.WaitingMessageRecipient;
+import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
+import com.aware.plugin.template.communication.messages.Message;
 import com.aware.utils.Aware_Plugin;
 
 import java.util.Set;
 
-public class Plugin extends Aware_Plugin {
+public class Plugin extends Aware_Plugin implements WaitingMessageRecipient{
+
+    public final static String RECIPIENT_NAME = Plugin.class.getName();
 
     @Override
     public void onCreate() {
@@ -55,6 +61,20 @@ public class Plugin extends Aware_Plugin {
     }
     public static AWARESensorObserver getSensorObserver() {
         return awareSensor;
+    }
+
+    @Override
+    public void receiveMessage(Message message) {
+        if(Message.MessageType.DEVICE_SELECTED.equals(message.getMessageType())){
+            MessageSender.discardIncomingMessages(this);
+            final DeviceSelectedMessage deviceSelectedMessage = (DeviceSelectedMessage) message;
+            final String deviceMacAddress = deviceSelectedMessage.getMacAddress();
+        }
+    }
+
+    @Override
+    public String getRecipientName() {
+        return RECIPIENT_NAME;
     }
 
     public interface AWARESensorObserver {
@@ -107,6 +127,7 @@ public class Plugin extends Aware_Plugin {
 
             final String deviceMacAddress = preferences.getString(ChooseDeviceActivity.SELECTED_MAC_ADDRESS_PREFERENCE_KEY, null);
             if(null == deviceMacAddress){
+                MessageSender.waitForMessages(this);
                 NotificationCompat.Builder mBuilder =
                         new NotificationCompat.Builder(this)
                                 .setSmallIcon(R.drawable.ic_launcher)
@@ -136,6 +157,8 @@ public class Plugin extends Aware_Plugin {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        MessageSender.discardIncomingMessages(this);
+
 
         //Turn off the sync-adapter if part of a study
         if (Aware.isStudy(this) && (getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || getApplicationContext().getResources().getBoolean(R.bool.standalone))) {
