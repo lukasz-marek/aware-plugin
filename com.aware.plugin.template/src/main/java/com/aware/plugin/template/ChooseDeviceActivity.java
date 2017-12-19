@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 
+import com.aware.plugin.template.communication.MessageSender;
+import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.mbientlab.bletoolbox.scanner.BleScannerFragment;
 import com.mbientlab.metawear.MetaWearBoard;
 
@@ -40,8 +42,12 @@ public class ChooseDeviceActivity extends Activity implements BleScannerFragment
         SharedPreferences preferences = PreferenceManager
                 .getDefaultSharedPreferences(this);
 
+        final String deviceMacAddress = device.getAddress();
+
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putString(SELECTED_MAC_ADDRESS_PREFERENCE_KEY, device.getAddress());
+        editor.putString(SELECTED_MAC_ADDRESS_PREFERENCE_KEY, deviceMacAddress);
         editor.apply();
+
+        MessageSender.sendMessage(Plugin.RECIPIENT_NAME, new DeviceSelectedMessage(deviceMacAddress));
     }
 }
