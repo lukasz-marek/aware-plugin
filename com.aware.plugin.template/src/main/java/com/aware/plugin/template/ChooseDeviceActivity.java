@@ -2,9 +2,7 @@ package com.aware.plugin.template;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 
 import com.aware.plugin.template.communication.MessageSender;
 import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
@@ -42,7 +40,7 @@ public class ChooseDeviceActivity extends Activity implements BleScannerFragment
 
         final String deviceMacAddress = device.getAddress();
 
-        MessageSender.sendMessage(Plugin.RECIPIENT_NAME, new DeviceSelectedMessage(deviceMacAddress));
+        MessageSender.sendMessageAsync(Plugin.RECIPIENT_NAME, new DeviceSelectedMessage(deviceMacAddress));
         this.finish();
     }
 }

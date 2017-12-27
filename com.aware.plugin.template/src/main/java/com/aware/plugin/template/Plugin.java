@@ -214,7 +214,7 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
         Aware.stopAWARE(this);
     }
 
-    private boolean connectWithBoard(String macAddress) {
+    private void connectWithBoard(String macAddress) {
         try {
             final BluetoothManager btManager =
                     (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -240,14 +240,10 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
                         createUnclickableNotification("Connection successful", "Data from MetaWearBoard is now recorded.");
                         return null;
                     }
-                }).waitForCompletion();
-                return true;
+                });
             } else {
-                return false;
             }
-        } catch (Exception e) {
-            return false;
-        }
+        } catch (Exception ignored) {}
     }
 
     private void initializeBoardListeners() {
