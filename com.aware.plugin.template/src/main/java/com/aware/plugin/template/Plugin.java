@@ -10,22 +10,28 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
-import com.aware.Accelerometer;
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
 import com.aware.plugin.template.communication.MessageSender;
 import com.aware.plugin.template.communication.WaitingMessageRecipient;
 import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.aware.plugin.template.communication.messages.Message;
+import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
+import com.aware.plugin.template.sensor.listener.impl.AccelerometerObserver;
 import com.aware.utils.Aware_Plugin;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.android.BtleService;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import bolts.Continuation;
+import bolts.Task;
 
 public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, ServiceConnection {
 
@@ -34,6 +40,8 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
     private BtleService.LocalBinder serviceBinder;
 
     private MetaWearBoard board;
+
+    private final List<MetaWearSensorObserver> observers = new ArrayList<>();
 
     @Override
     public void onCreate() {
@@ -81,17 +89,19 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
     public void receiveMessage(Message message) {
         if (Message.MessageType.DEVICE_SELECTED.equals(message.getMessageType())) {
             MessageSender.discardIncomingMessages(this);
+            if(board != null && board.isConnected()){
+                try {
+                    board.disconnectAsync().waitForCompletion();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
 
             final DeviceSelectedMessage deviceSelectedMessage = (DeviceSelectedMessage) message;
             final String deviceMacAddress = deviceSelectedMessage.getMacAddress();
 
             synchronized (this) {
-                if (connectWithBoard(deviceMacAddress)) {
-                    initializeBoardListeners();
-                    createUnclickableNotification("Connection successful", "Data from MetaWearBoard is now recorded.");
-                } else {
-                    createUnclickableNotification("Error connecting with device", "AWARE was unable to connect with chosen device.");
-                }
+                connectWithBoard(deviceMacAddress);
             }
 
             MessageSender.waitForMessages(this);
@@ -130,17 +140,6 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
             //Initialize our plugin's settings
             Aware.setSetting(this, Settings.STATUS_PLUGIN_TEMPLATE, true);
 
-            /**
-             * Example of how to enable accelerometer sensing and how to access the data in real-time for your app.
-             * In this particular case, we are sending a broadcast that the ContextCard listens to and updates the UI in real-time.
-             */
-            Aware.startAccelerometer(this);
-            Accelerometer.setSensorObserver(new Accelerometer.AWARESensorObserver() {
-                @Override
-                public void onAccelerometerChanged(ContentValues contentValues) {
-                    sendBroadcast(new Intent("ACCELEROMETER_DATA").putExtra("data", contentValues));
-                }
-            });
 
             //Enable our plugin's sync-adapter to upload the data to the server if part of a study
             if (Aware.getSetting(this, Aware_Preferences.FREQUENCY_WEBSERVICE).length() >= 0 && !Aware.isSyncEnabled(this, Provider.getAuthority(this)) && Aware.isStudy(this) && getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || getApplicationContext().getResources().getBoolean(R.bool.standalone)) {
@@ -157,13 +156,9 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
             //Initialise AWARE instance in plugin
             Aware.startAWARE(this);
 
-            final SharedPreferences preferences = PreferenceManager
-                    .getDefaultSharedPreferences(this);
 
-
-            final String deviceMacAddress = preferences.getString(ChooseDeviceActivity.SELECTED_MAC_ADDRESS_PREFERENCE_KEY, null);
-            if (null == deviceMacAddress) {
-                MessageSender.waitForMessages(this);
+            MessageSender.waitForMessages(this);
+            if (null == board || !board.isConnected()) {
                 NotificationCompat.Builder mBuilder =
                         new NotificationCompat.Builder(this)
                                 .setSmallIcon(R.drawable.ic_launcher)
@@ -192,6 +187,12 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
 
     @Override
     public void onDestroy() {
+        try {
+            board.disconnectAsync().waitForCompletion();
+        } catch (InterruptedException ignored) {
+            Log.e(TAG, ignored.getMessage());
+        }
+
         MessageSender.discardIncomingMessages(this);
         super.onDestroy();
         getApplicationContext().unbindService(this);
@@ -222,6 +223,24 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
                         btManager.getAdapter().getRemoteDevice(macAddress);
 
                 this.board = serviceBinder.getMetaWearBoard(remoteDevice);
+                board.connectAsync().continueWith(new Continuation<Void, Void>() {
+                    @Override
+                    public Void then(Task<Void> task) throws Exception {
+                        if (task.isFaulted()) {
+                            Log.i("MainActivity", "Failed to connect");
+                        } else {
+                            Log.i("MainActivity", "Connected");
+                        }
+                        return null;
+                    }
+                }).onSuccess(new Continuation<Void, Void>() {
+                    @Override
+                    public Void then(Task<Void> task) throws Exception {
+                        initializeBoardListeners();
+                        createUnclickableNotification("Connection successful", "Data from MetaWearBoard is now recorded.");
+                        return null;
+                    }
+                }).waitForCompletion();
                 return true;
             } else {
                 return false;
@@ -232,7 +251,7 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
     }
 
     private void initializeBoardListeners() {
-
+        observers.add(new AccelerometerObserver(board));
     }
 
     private void createUnclickableNotification(String title, String content) {

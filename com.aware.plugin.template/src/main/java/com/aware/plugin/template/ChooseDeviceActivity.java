@@ -39,14 +39,8 @@ public class ChooseDeviceActivity extends Activity implements BleScannerFragment
 
     @Override
     public void onDeviceSelected(BluetoothDevice device) {
-        SharedPreferences preferences = PreferenceManager
-                .getDefaultSharedPreferences(this);
 
         final String deviceMacAddress = device.getAddress();
-
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putString(SELECTED_MAC_ADDRESS_PREFERENCE_KEY, deviceMacAddress);
-        editor.apply();
 
         MessageSender.sendMessage(Plugin.RECIPIENT_NAME, new DeviceSelectedMessage(deviceMacAddress));
         this.finish();

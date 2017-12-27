@@ -1,5 +1,7 @@
 package com.aware.plugin.template.sensor.listener.impl;
 
+import android.util.Log;
+
 import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
 import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
@@ -19,13 +21,15 @@ import bolts.Task;
 
 public final class AccelerometerObserver extends MetaWearSensorObserver {
 
+    private final static String LOG_TAG = AccelerometerObserver.class.getSimpleName();
+
     public AccelerometerObserver(MetaWearBoard metaWearBoard) {
         super(metaWearBoard);
     }
 
     @Override
     protected void registerObserver(MetaWearBoard metaWearBoard) {
-        final Accelerometer accelerometer= metaWearBoard.getModule(Accelerometer.class);
+        final Accelerometer accelerometer = metaWearBoard.getModule(Accelerometer.class);
 
         accelerometer.acceleration().addRouteAsync(new RouteBuilder() {
             @Override
@@ -33,9 +37,9 @@ public final class AccelerometerObserver extends MetaWearSensorObserver {
                 source.stream(new Subscriber() {
                     @Override
                     public void apply(Data data, Object... env) {
-                       final Acceleration producedData = data.value(Acceleration.class);
+                        final Acceleration producedData = data.value(Acceleration.class);
 
-                       processData(producedData);
+                        processData(producedData);
                     }
                 });
             }
@@ -49,7 +53,7 @@ public final class AccelerometerObserver extends MetaWearSensorObserver {
         });
     }
 
-    private void processData(Acceleration acceleration){
-
+    private void processData(Acceleration acceleration) {
+        Log.v(LOG_TAG, acceleration.toString());
     }
 }
