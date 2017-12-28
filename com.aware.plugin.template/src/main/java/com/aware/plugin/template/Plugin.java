@@ -251,8 +251,8 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
         /* add more listeners here*/
         final Led ledModule = board.get().getModule(Led.class);
         if (null != ledModule) {
-            ledModule.editPattern(Led.Color.GREEN, Led.PatternPreset.SOLID).commit();
             ledModule.play();
+            ledModule.editPattern(Led.Color.GREEN, Led.PatternPreset.SOLID).commit();
         }
     }
 
