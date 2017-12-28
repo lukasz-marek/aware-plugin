@@ -1,7 +1,13 @@
 package com.aware.plugin.template.sensor.listener.impl;
 
+import android.content.ContentProviderClient;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Context;
+import android.os.RemoteException;
 import android.util.Log;
 
+import com.aware.plugin.template.Provider;
 import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
 import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
@@ -11,6 +17,9 @@ import com.mbientlab.metawear.builder.RouteBuilder;
 import com.mbientlab.metawear.builder.RouteComponent;
 import com.mbientlab.metawear.data.Acceleration;
 import com.mbientlab.metawear.module.Accelerometer;
+
+import java.sql.Timestamp;
+import java.util.Calendar;
 
 import bolts.Continuation;
 import bolts.Task;
@@ -23,37 +32,46 @@ public final class AccelerometerObserver extends MetaWearSensorObserver {
 
     private final static String LOG_TAG = AccelerometerObserver.class.getSimpleName();
 
-    public AccelerometerObserver(MetaWearBoard metaWearBoard) {
-        super(metaWearBoard);
+    public AccelerometerObserver(MetaWearBoard metaWearBoard, Context context) {
+        super(metaWearBoard, context);
     }
 
     @Override
     protected void registerObserver(MetaWearBoard metaWearBoard) {
         final Accelerometer accelerometer = metaWearBoard.getModule(Accelerometer.class);
 
-        accelerometer.acceleration().addRouteAsync(new RouteBuilder() {
-            @Override
-            public void configure(RouteComponent source) {
-                source.stream(new Subscriber() {
-                    @Override
-                    public void apply(Data data, Object... env) {
-                        final Acceleration producedData = data.value(Acceleration.class);
+        accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+            final Acceleration producedData = data.value(Acceleration.class);
+            final Calendar timestamp = data.timestamp();
 
-                        processData(producedData);
-                    }
-                });
-            }
-        }).continueWith(new Continuation<Route, Void>() {
-            @Override
-            public Void then(Task<Route> task) throws Exception {
-                accelerometer.acceleration().start();
-                accelerometer.start();
-                return null;
-            }
+            processData(producedData, timestamp);
+        })).continueWith((Continuation<Route, Void>) task -> {
+            accelerometer.acceleration().start();
+            accelerometer.start();
+            return null;
         });
     }
 
-    private void processData(Acceleration acceleration) {
+    private void processData(Acceleration acceleration, Calendar timestamp) {
         Log.v(LOG_TAG, acceleration.toString());
+
+        final ContentValues contentValues = convertToContentValues(acceleration, timestamp);
+        try {
+            providerClient.insert(Provider.Acceleration_Data.CONTENT_URI, contentValues);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private ContentValues convertToContentValues(Acceleration acceleration, Calendar timestamp) {
+        final ContentValues contentValues = new ContentValues();
+        final Timestamp sqlTimestamp = new Timestamp(timestamp.getTime().getTime());
+
+        contentValues.put(Provider.Acceleration_Data.TIMESTAMP, sqlTimestamp.toString());
+        contentValues.put(Provider.Acceleration_Data.X, acceleration.x());
+        contentValues.put(Provider.Acceleration_Data.Y, acceleration.y());
+        contentValues.put(Provider.Acceleration_Data.Z, acceleration.y());
+
+        return contentValues;
     }
 }
