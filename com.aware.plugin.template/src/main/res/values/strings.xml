@@ -1,4 +1,15 @@
 <resources>
     <string name="app_name">AWARE: MbientLab</string>
     <string name="plugin_template">Plugin: MbientLab</string>
+
+    <string name="no_device_selected_notification_title">No device selected</string>
+    <string name="no_device_selected_notification_content">Click here to select a MetaWear device.</string>
+
+    <string name="connection_successful_notification_title">Connection successful</string>
+    <string name="connection_successful_notification_content">Data from MetaWear board is now recorded.</string>
+
+    <string name="connection_failed_notification_title">Connection failed</string>
+    <string name="connection_failed_notification_content">Try again or select another device.</string>
+
+    <string name="hello_card_instruction">Click on setting tab to control the plugin.</string>
 </resources>

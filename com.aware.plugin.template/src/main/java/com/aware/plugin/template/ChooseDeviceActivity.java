@@ -17,7 +17,7 @@ import java.util.UUID;
 
 public class ChooseDeviceActivity extends Activity implements BleScannerFragment.ScannerCommunicationBus {
 
-    public final static String SELECTED_MAC_ADDRESS_PREFERENCE_KEY = "DEVICE_MAC_ADDRESS";
+    private final static long SCAN_DURATION_MILLISECONDS = 30000;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,7 +32,7 @@ public class ChooseDeviceActivity extends Activity implements BleScannerFragment
 
     @Override
     public long getScanDuration() {
-        return 10000;
+        return SCAN_DURATION_MILLISECONDS;
     }
 
     @Override

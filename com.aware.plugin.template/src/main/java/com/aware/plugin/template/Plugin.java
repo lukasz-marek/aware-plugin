@@ -13,12 +13,11 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
-import android.util.Log;
 
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
 import com.aware.plugin.template.communication.MessageSender;
-import com.aware.plugin.template.communication.WaitingMessageRecipient;
+import com.aware.plugin.template.communication.MessageRecipient;
 import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.aware.plugin.template.communication.messages.Message;
 import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
@@ -28,14 +27,13 @@ import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.android.BtleService;
 import com.mbientlab.metawear.module.Led;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 import bolts.Continuation;
 
-public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, ServiceConnection {
+public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceConnection {
 
     public final static String RECIPIENT_NAME = Plugin.class.getName();
 
@@ -45,9 +43,12 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
 
     private final List<MetaWearSensorObserver> observers = new CopyOnWriteArrayList<>();
 
+    private NotificationManager notificationManager;
+
     @Override
     public void onCreate() {
         super.onCreate();
+        MessageSender.waitForMessages(this);
         getApplicationContext().bindService(new Intent(this, BtleService.class),
                 this, Context.BIND_AUTO_CREATE);
 
@@ -72,6 +73,7 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
         //By default, AWARE asks access to the #Manifest.permission.WRITE_EXTERNAL_STORAGE
 
         //REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
     }
 
     /**
@@ -88,25 +90,14 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
     }
 
     @Override
-    public void receiveMessage(Message message) {
+    public synchronized void receiveMessage(Message message) {
         switch (message.getMessageType()) {
             case DEVICE_SELECTED:
-                MessageSender.discardIncomingMessages(this);
-                if (board.get() != null && board.get().isConnected()) {
-                    try {
-                        board.get().disconnectAsync().waitForCompletion();
-                        this.observers.clear();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
                 final DeviceSelectedMessage deviceSelectedMessage = (DeviceSelectedMessage) message;
                 final String deviceMacAddress = deviceSelectedMessage.getMacAddress();
-
+                disconnectBoard();
                 connectWithBoard(deviceMacAddress);
 
-                MessageSender.waitForMessages(this);
                 break;
         }
     }
@@ -160,21 +151,20 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
             Aware.startAWARE(this);
 
 
-            MessageSender.waitForMessages(this);
-            if (board.get() == null || !board.get().isConnected()) {
-                createNoDeviceSelectedNotification();
+            if (!isBoardConnected()) {
+                createDeviceSelectionNotification(getString(R.string.no_device_selected_notification_title), getString(R.string.no_device_selected_notification_content), NotificationIdentifier.NO_DEVICE_SELECTED.getIdentifier());
             }
         }
 
         return START_STICKY;
     }
 
-    private void createNoDeviceSelectedNotification() {
+    private void createDeviceSelectionNotification(String title, String content, int id) {
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.ic_launcher)
-                        .setContentTitle("No device selected")
-                        .setContentText("Click here to select a MetaWear device.");
+                        .setContentTitle(title)
+                        .setContentText(content);
 
         Intent resultIntent = new Intent(this, ChooseDeviceActivity.class);
 
@@ -186,22 +176,32 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
                         PendingIntent.FLAG_UPDATE_CURRENT
                 );
         mBuilder.setContentIntent(resultPendingIntent);
-        int mNotificationId = 001;
-        NotificationManager mNotifyMgr =
-                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        mNotifyMgr.notify(mNotificationId, mBuilder.build());
+        notificationManager.notify(id, mBuilder.build());
+    }
+
+    private synchronized void disconnectBoard(){
+        if (isBoardConnected()) {
+            try {
+                observers.forEach(MetaWearSensorObserver::terminate);
+                observers.clear();
+                disableLed();
+                board.get().disconnectAsync().waitForCompletion();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            board.set(null);
+        }
+    }
+
+    private synchronized boolean isBoardConnected(){
+        return board.get() != null && board.get().isConnected();
     }
 
     @Override
     public void onDestroy() {
-        try {
-            if(board.get()!=null) {
-                board.get().disconnectAsync().waitForCompletion();
-            }
-        } catch (InterruptedException ignored) {
-            Log.e(TAG, ignored.getMessage());
-        }
+        disconnectBoard();
         this.observers.clear();
+        cancelAllNotifications();
 
         MessageSender.discardIncomingMessages(this);
         super.onDestroy();
@@ -227,16 +227,17 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
     private void connectWithBoard(String macAddress) {
         final BluetoothManager btManager =
                 (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        if (btManager.getAdapter() != null) {
+        if (btManager != null && btManager.getAdapter() != null) {
             final BluetoothDevice remoteDevice =
                     btManager.getAdapter().getRemoteDevice(macAddress);
 
             board.set(serviceBinder.getMetaWearBoard(remoteDevice));
             board.get().connectAsync().continueWith((Continuation<Void, Void>) task -> {
+                cancelAllNotifications();
                 if (task.isFaulted()) {
-                    createNoDeviceSelectedNotification();
+                    createDeviceSelectionNotification(getString(R.string.connection_failed_notification_title), getString(R.string.connection_failed_notification_content), NotificationIdentifier.CONNECTION_TO_DEVICE_FAILED.getIdentifier());
                 } else {
-                    createUnclickableNotification("Connection successful", "Data from MetaWearBoard is now recorded.");
+                    notifyUser(getString(R.string.connection_successful_notification_title), getString(R.string.connection_successful_notification_content), NotificationIdentifier.CONNECTION_TO_DEVICE_SUCCESSFUL.getIdentifier());
                 }
                 return null;
             }).onSuccess((Continuation<Void, Void>) task -> {
@@ -249,23 +250,39 @@ public class Plugin extends Aware_Plugin implements WaitingMessageRecipient, Ser
     private void initializeBoardListeners() {
         observers.add(new AccelerometerObserver(board.get(), this));
         /* add more listeners here*/
+
+        enableLed();
+    }
+
+    private void enableLed(){
         final Led ledModule = board.get().getModule(Led.class);
         if (null != ledModule) {
             ledModule.play();
-            ledModule.editPattern(Led.Color.GREEN, Led.PatternPreset.SOLID).commit();
+            ledModule.editPattern(Led.Color.GREEN, Led.PatternPreset.PULSE).commit();
         }
     }
 
-    private void createUnclickableNotification(String title, String content) {
+    private void disableLed(){
+        final Led ledModule = board.get().getModule(Led.class);
+        if (null != ledModule) {
+            ledModule.stop(true);
+        }
+    }
+
+    private void notifyUser(String title, String content, int notificationId) {
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.ic_launcher)
                         .setContentTitle(title)
                         .setContentText(content);
 
-        int mNotificationId = 002;
-        NotificationManager mNotifyMgr =
-                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        mNotifyMgr.notify(mNotificationId, mBuilder.build());
+
+        notificationManager.notify(notificationId, mBuilder.build());
+    }
+
+    private void cancelAllNotifications() {
+        for (NotificationIdentifier identifier : NotificationIdentifier.values()) {
+            notificationManager.cancel(identifier.getIdentifier());
+        }
     }
 }

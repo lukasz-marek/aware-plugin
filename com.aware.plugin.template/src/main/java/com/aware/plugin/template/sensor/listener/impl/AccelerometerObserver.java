@@ -20,6 +20,10 @@ import com.mbientlab.metawear.module.Accelerometer;
 
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import bolts.Continuation;
 import bolts.Task;
@@ -32,6 +36,7 @@ public final class AccelerometerObserver extends MetaWearSensorObserver {
 
     private final static String LOG_TAG = AccelerometerObserver.class.getSimpleName();
 
+
     public AccelerometerObserver(MetaWearBoard metaWearBoard, Context context) {
         super(metaWearBoard, context);
     }
@@ -40,12 +45,18 @@ public final class AccelerometerObserver extends MetaWearSensorObserver {
     protected void registerObserver(MetaWearBoard metaWearBoard) {
         final Accelerometer accelerometer = metaWearBoard.getModule(Accelerometer.class);
 
+
         accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
             final Acceleration producedData = data.value(Acceleration.class);
             final Calendar timestamp = data.timestamp();
 
             processData(producedData, timestamp);
         })).continueWith((Continuation<Route, Void>) task -> {
+            addTerminationTask(() -> {
+                accelerometer.acceleration().stop();
+                accelerometer.stop();
+                return null;
+            });
             accelerometer.acceleration().start();
             accelerometer.start();
             return null;
