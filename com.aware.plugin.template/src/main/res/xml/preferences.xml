@@ -21,4 +21,7 @@
             android:targetClass="com.aware.plugin.template.ChooseDeviceActivity"
             />
     </Preference>
+    <Preference android:title="@string/force_disconnect_button_title"
+        android:key="force_disconnect"
+        android:summary="@string/force_disconnect_button_summary" />
 </PreferenceScreen>

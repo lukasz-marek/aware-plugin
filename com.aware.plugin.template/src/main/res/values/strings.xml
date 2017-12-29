@@ -19,6 +19,10 @@
     <string name="select_device_preference_name">Choose device</string>
     <string name="select_device_preference_description">Choose a MetaWear device from the list.</string>
 
+    <string name="force_disconnect_button_title">Disconnect from current board</string>
+    <string name="force_disconnect_button_summary">If connected to a board, disconnect from it.</string>
+
+
 
 
 </resources>

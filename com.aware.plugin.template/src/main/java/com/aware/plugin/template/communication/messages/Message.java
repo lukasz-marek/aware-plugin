@@ -6,7 +6,8 @@ package com.aware.plugin.template.communication.messages;
 
 public abstract class Message {
     public enum MessageType {
-        DEVICE_SELECTED
+        DEVICE_SELECTED,
+        DISCONNECT
     }
 
     private final MessageType messageType;

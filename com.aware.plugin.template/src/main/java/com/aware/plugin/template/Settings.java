@@ -10,6 +10,7 @@ import android.preference.PreferenceManager;
 import com.aware.Aware;
 import com.aware.plugin.template.communication.MessageRecipient;
 import com.aware.plugin.template.communication.MessageSender;
+import com.aware.plugin.template.communication.messages.ForceDisconnectMessage;
 import com.aware.plugin.template.communication.messages.Message;
 
 public class Settings extends PreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -28,7 +29,11 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.registerOnSharedPreferenceChangeListener(this);
 
-
+        final Preference button = findPreference("force_disconnect");
+        button.setOnPreferenceClickListener(preference -> {
+            MessageSender.sendMessageAsync(Plugin.RECIPIENT_NAME, new ForceDisconnectMessage());
+            return true;
+        });
     }
 
     @Override

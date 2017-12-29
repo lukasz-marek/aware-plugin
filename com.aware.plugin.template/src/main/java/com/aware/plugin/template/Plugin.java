@@ -98,6 +98,8 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
                 disconnectBoard();
                 connectWithBoard(deviceMacAddress);
                 break;
+            case DISCONNECT:
+                disconnectBoard();
         }
     }
 
