@@ -9,15 +9,16 @@
         android:persistent="true"
         android:summary="Activate/deactivate plugin" />
 
+
     <Preference
-        android:title="Choose device"
-        android:summary="Choose metawear device from a list">
+        android:key="choose_device_pref"
+        android:title="@string/select_device_preference_name"
+        android:summary="@string/select_device_preference_description">
 
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="com.aware.plugin.template"
             android:targetClass="com.aware.plugin.template.ChooseDeviceActivity"
             />
-
     </Preference>
 </PreferenceScreen>

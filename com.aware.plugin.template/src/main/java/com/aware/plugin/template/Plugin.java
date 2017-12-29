@@ -48,7 +48,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
     @Override
     public void onCreate() {
         super.onCreate();
-        MessageSender.waitForMessages(this);
+        MessageSender.registerAsRecipient(this);
         getApplicationContext().bindService(new Intent(this, BtleService.class),
                 this, Context.BIND_AUTO_CREATE);
 
@@ -90,14 +90,13 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
     }
 
     @Override
-    public synchronized void receiveMessage(Message message) {
+    public void receiveMessage(Message message) {
         switch (message.getMessageType()) {
             case DEVICE_SELECTED:
                 final DeviceSelectedMessage deviceSelectedMessage = (DeviceSelectedMessage) message;
                 final String deviceMacAddress = deviceSelectedMessage.getMacAddress();
                 disconnectBoard();
                 connectWithBoard(deviceMacAddress);
-
                 break;
         }
     }
@@ -150,7 +149,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
             //Initialise AWARE instance in plugin
             Aware.startAWARE(this);
 
-
+            cancelAllNotifications();
             if (!isBoardConnected()) {
                 createDeviceSelectionNotification(getString(R.string.no_device_selected_notification_title), getString(R.string.no_device_selected_notification_content), NotificationIdentifier.NO_DEVICE_SELECTED.getIdentifier());
             }
@@ -179,21 +178,21 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
         notificationManager.notify(id, mBuilder.build());
     }
 
-    private synchronized void disconnectBoard(){
+    private synchronized void disconnectBoard() {
         if (isBoardConnected()) {
             try {
                 observers.forEach(MetaWearSensorObserver::terminate);
                 observers.clear();
                 disableLed();
                 board.get().disconnectAsync().waitForCompletion();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            } catch (InterruptedException ignored) {}
+            finally {
+                board.set(null);
             }
-            board.set(null);
         }
     }
 
-    private synchronized boolean isBoardConnected(){
+    private synchronized boolean isBoardConnected() {
         return board.get() != null && board.get().isConnected();
     }
 
@@ -225,36 +224,46 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
     }
 
     private void connectWithBoard(String macAddress) {
+        cancelAllNotifications();
+
         final BluetoothManager btManager =
                 (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+
         if (btManager != null && btManager.getAdapter() != null) {
+
             final BluetoothDevice remoteDevice =
                     btManager.getAdapter().getRemoteDevice(macAddress);
 
             board.set(serviceBinder.getMetaWearBoard(remoteDevice));
-            board.get().connectAsync().continueWith((Continuation<Void, Void>) task -> {
-                cancelAllNotifications();
-                if (task.isFaulted()) {
-                    createDeviceSelectionNotification(getString(R.string.connection_failed_notification_title), getString(R.string.connection_failed_notification_content), NotificationIdentifier.CONNECTION_TO_DEVICE_FAILED.getIdentifier());
-                } else {
-                    notifyUser(getString(R.string.connection_successful_notification_title), getString(R.string.connection_successful_notification_content), NotificationIdentifier.CONNECTION_TO_DEVICE_SUCCESSFUL.getIdentifier());
-                }
-                return null;
-            }).onSuccess((Continuation<Void, Void>) task -> {
-                initializeBoardListeners();
-                return null;
-            });
-        }
+            try {
+
+                board.get().connectAsync().continueWith((Continuation<Void, Void>) task -> {
+                    if (task.isFaulted()) {
+                        createDeviceSelectionNotification(getString(R.string.connection_failed_notification_title), getString(R.string.connection_failed_notification_content), NotificationIdentifier.CONNECTION_TO_DEVICE_FAILED.getIdentifier());
+                    } else {
+                        notifyUser(getString(R.string.connection_successful_notification_title), getString(R.string.connection_successful_notification_content), NotificationIdentifier.CONNECTION_TO_DEVICE_SUCCESSFUL.getIdentifier());
+                    }
+                    return null;
+                }).onSuccess((Continuation<Void, Void>) task -> {
+                    initializeBoardListeners();
+                    return null;
+                }).waitForCompletion();
+
+            } catch (InterruptedException e) {
+                createDeviceSelectionNotification(getString(R.string.connection_failed_notification_title), getString(R.string.connection_failed_notification_content), NotificationIdentifier.CONNECTION_TO_DEVICE_FAILED.getIdentifier());
+            }
+        }else{
+        notifyUser(getString(R.string.bluetooth_not_available_title), getString(R.string.bluetooth_not_available_content), NotificationIdentifier.BLUETOOTH_NOT_SUPPORTED.getIdentifier());        }
     }
 
     private void initializeBoardListeners() {
         observers.add(new AccelerometerObserver(board.get(), this));
-        /* add more listeners here*/
+        /* add more listeners below*/
 
         enableLed();
     }
 
-    private void enableLed(){
+    private void enableLed() {
         final Led ledModule = board.get().getModule(Led.class);
         if (null != ledModule) {
             ledModule.play();
@@ -262,7 +271,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
         }
     }
 
-    private void disableLed(){
+    private void disableLed() {
         final Led ledModule = board.get().getModule(Led.class);
         if (null != ledModule) {
             ledModule.stop(true);

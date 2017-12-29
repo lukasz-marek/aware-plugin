@@ -12,4 +12,13 @@
     <string name="connection_failed_notification_content">Try again or select another device.</string>
 
     <string name="hello_card_instruction">Click on setting tab to control the plugin.</string>
+
+    <string name="bluetooth_not_available_title">Unable to access bluetooth service</string>
+    <string name="bluetooth_not_available_content">Connection with remote device will not be established.</string>
+
+    <string name="select_device_preference_name">Choose device</string>
+    <string name="select_device_preference_description">Choose a MetaWear device from the list.</string>
+
+
+
 </resources>

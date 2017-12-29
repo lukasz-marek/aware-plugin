@@ -8,7 +8,8 @@ public enum NotificationIdentifier {
 
     NO_DEVICE_SELECTED(0),
     CONNECTION_TO_DEVICE_SUCCESSFUL(1),
-    CONNECTION_TO_DEVICE_FAILED(2);
+    CONNECTION_TO_DEVICE_FAILED(2),
+    BLUETOOTH_NOT_SUPPORTED(3);
 
     private final int value;
 

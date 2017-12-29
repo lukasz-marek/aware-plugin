@@ -8,6 +8,9 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 
 import com.aware.Aware;
+import com.aware.plugin.template.communication.MessageRecipient;
+import com.aware.plugin.template.communication.MessageSender;
+import com.aware.plugin.template.communication.messages.Message;
 
 public class Settings extends PreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -21,8 +24,11 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preferences);
+
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         prefs.registerOnSharedPreferenceChangeListener(this);
+
+
     }
 
     @Override
