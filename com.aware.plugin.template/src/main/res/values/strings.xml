@@ -5,6 +5,10 @@
     <string name="no_device_selected_notification_title">No device selected</string>
     <string name="no_device_selected_notification_content">Click here to select a MetaWear device.</string>
 
+
+    <string name="connection_lost_notification_title">Device disconnected</string>
+    <string name="connection_lost_notification_content">Device disconnected</string>
+
     <string name="connection_successful_notification_title">Connection successful</string>
     <string name="connection_successful_notification_content">Data from MetaWear board is now recorded.</string>
 

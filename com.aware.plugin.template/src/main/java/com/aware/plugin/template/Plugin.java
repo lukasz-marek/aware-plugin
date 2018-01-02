@@ -249,9 +249,10 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
                     }
                     return null;
                 }).onSuccess((Continuation<Void, Void>) task -> {
+                    
                     board.get().onUnexpectedDisconnect((int status)->{
                         disconnectBoard();
-                        createDeviceSelectionNotification(getString(R.string.no_device_selected_notification_title), getString(R.string.no_device_selected_notification_content), NotificationIdentifier.NO_DEVICE_SELECTED.getIdentifier());
+                        createDeviceSelectionNotification(getString(R.string.connection_lost_notification_title), getString(R.string.connection_lost_notification_content), NotificationIdentifier.NO_DEVICE_SELECTED.getIdentifier());
                     });
 
                     initializeBoardListeners();
