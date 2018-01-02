@@ -24,12 +24,14 @@ public class Provider extends ContentProvider {
 
     public static String AUTHORITY = "com.aware.plugin.template.provider.mbientlab"; //change to package.provider.your_plugin_name
 
-    public static final int DATABASE_VERSION = 2; //increase this if you make changes to the database structure, i.e., rename columns, etc.
+    public static final int DATABASE_VERSION = 3; //increase this if you make changes to the database structure, i.e., rename columns, etc.
     public static final String DATABASE_NAME = "plugin_mbientlab.db"; //the database filename, use plugin_xxx for plugins.
 
     //Add here your database table names, as many as you need
     public static final String DB_ACCELERATION = "acceleration";
     public static final String DB_VELOCITY = "velocity";
+    public static final String DB_MAGNETIC = "magnetic";
+
 
 
     //For each table, add two indexes: DIR and ITEM. The index needs to always increment. Next one is 3, and so on.
@@ -39,10 +41,14 @@ public class Provider extends ContentProvider {
     private static final int VELOCITY_DIR = 3;
     private static final int VELOCITY_ITEM = 4;
 
+    private static final int MAGNETIC_DIR = 5;
+    private static final int MAGNETIC_ITEM = 6;
+
     //Put tables names in this array so AWARE knows what you have on the database
     public static final String[] DATABASE_TABLES = {
             DB_ACCELERATION,
-            DB_VELOCITY
+            DB_VELOCITY,
+            DB_MAGNETIC
     };
 
     //These are columns that we need to sync data, don't change this!
@@ -80,6 +86,18 @@ public class Provider extends ContentProvider {
 
     }
 
+    public static final class Magnetic_Data implements AWAREColumns {
+        public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + DB_MAGNETIC);
+        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.aware.plugin.template.provider.magnetic"; //modify me
+        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.com.aware.plugin.template.provider.magnetic"; //modify me
+
+        //Note: integers and strings don't need a type prefix_
+        public static final String X = "double_x"; //a double_ prefix makes a MySQL DOUBLE column
+        public static final String Y = "double_y"; //a double_ prefix makes a MySQL DOUBLE column
+        public static final String Z = "double_z"; //a double_ prefix makes a MySQL DOUBLE column
+
+    }
+
     //Define each database table fields
     private static final String DB_ACCELERATION_FIELDS =
             Acceleration_Data._ID + " integer primary key autoincrement," +
@@ -90,19 +108,28 @@ public class Provider extends ContentProvider {
                     Acceleration_Data.Z + " real default 0";
 
     private static final String DB_VELOCITY_FIELDS =
-            Acceleration_Data._ID + " integer primary key autoincrement," +
-                    Acceleration_Data.TIMESTAMP + " real default 0," +
-                    Acceleration_Data.DEVICE_ID + " text default ''," +
-                    Acceleration_Data.X + " real default 0," +
-                    Acceleration_Data.Y + " real default 0," +
-                    Acceleration_Data.Z + " real default 0";
+            Velocity_Data._ID + " integer primary key autoincrement," +
+                    Velocity_Data.TIMESTAMP + " real default 0," +
+                    Velocity_Data.DEVICE_ID + " text default ''," +
+                    Velocity_Data.X + " real default 0," +
+                    Velocity_Data.Y + " real default 0," +
+                    Velocity_Data.Z + " real default 0";
+
+    private static final String DB_MAGNETIC_FIELDS =
+            Magnetic_Data._ID + " integer primary key autoincrement," +
+                    Magnetic_Data.TIMESTAMP + " real default 0," +
+                    Magnetic_Data.DEVICE_ID + " text default ''," +
+                    Magnetic_Data.X + " real default 0," +
+                    Magnetic_Data.Y + " real default 0," +
+                    Magnetic_Data.Z + " real default 0";
 
     /**
      * Share the fields with AWARE so we can replicate the table schema on the server
      */
     public static final String[] TABLES_FIELDS = {
             DB_ACCELERATION_FIELDS,
-            DB_VELOCITY_FIELDS
+            DB_VELOCITY_FIELDS,
+            DB_MAGNETIC_FIELDS
     };
 
     //Helper variables for ContentProvider - DO NOT CHANGE
@@ -122,6 +149,9 @@ public class Provider extends ContentProvider {
     private HashMap<String, String> accelerationMap;
 
     private HashMap<String, String> velocityMap;
+
+    private HashMap<String, String> magneticMap;
+
 
 
     /**
@@ -148,6 +178,9 @@ public class Provider extends ContentProvider {
         sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[1], VELOCITY_DIR);
         sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[1] + "/#", VELOCITY_ITEM);
 
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[2], MAGNETIC_DIR);
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[2] + "/#", MAGNETIC_ITEM);
+
         //Create each table hashmap so Android knows how to insert data to the database. Put ALL table fields.
         accelerationMap = new HashMap<>();
         accelerationMap.put(Acceleration_Data._ID, Acceleration_Data._ID);
@@ -164,6 +197,14 @@ public class Provider extends ContentProvider {
         velocityMap.put(Velocity_Data.X, Velocity_Data.X);
         velocityMap.put(Velocity_Data.Y, Velocity_Data.Y);
         velocityMap.put(Velocity_Data.Z, Velocity_Data.Z);
+
+        magneticMap = new HashMap<>();
+        magneticMap.put(Magnetic_Data._ID, Magnetic_Data._ID);
+        magneticMap.put(Magnetic_Data.TIMESTAMP, Magnetic_Data.TIMESTAMP);
+        magneticMap.put(Magnetic_Data.DEVICE_ID, Magnetic_Data.DEVICE_ID);
+        magneticMap.put(Magnetic_Data.X, Magnetic_Data.X);
+        magneticMap.put(Magnetic_Data.Y, Magnetic_Data.Y);
+        magneticMap.put(Magnetic_Data.Z, Magnetic_Data.Z);
 
         return true;
     }
@@ -183,6 +224,9 @@ public class Provider extends ContentProvider {
                 break;
             case VELOCITY_DIR:
                 count = database.delete(DATABASE_TABLES[1], selection, selectionArgs);
+                break;
+            case MAGNETIC_DIR:
+                count = database.delete(DATABASE_TABLES[2], selection, selectionArgs);
                 break;
             default:
                 database.endTransaction();
@@ -230,6 +274,17 @@ public class Provider extends ContentProvider {
                 }
                 database.endTransaction();
                 throw new SQLException("Failed to insert row into " + uri);
+            case MAGNETIC_DIR:
+                _id = database.insert(DATABASE_TABLES[2], Magnetic_Data.DEVICE_ID, values);
+                database.setTransactionSuccessful();
+                database.endTransaction();
+                if (_id > 0) {
+                    Uri dataUri = ContentUris.withAppendedId(Magnetic_Data.CONTENT_URI, _id);
+                    getContext().getContentResolver().notifyChange(dataUri, null);
+                    return dataUri;
+                }
+                database.endTransaction();
+                throw new SQLException("Failed to insert row into " + uri);
             default:
                 database.endTransaction();
                 throw new IllegalArgumentException("Unknown URI " + uri);
@@ -253,6 +308,10 @@ public class Provider extends ContentProvider {
             case VELOCITY_DIR:
                 qb.setTables(DATABASE_TABLES[1]);
                 qb.setProjectionMap(velocityMap); //the hashmap of the table
+                break;
+            case MAGNETIC_DIR:
+                qb.setTables(DATABASE_TABLES[2]);
+                qb.setProjectionMap(magneticMap); //the hashmap of the table
                 break;
 
             default:
@@ -286,6 +345,10 @@ public class Provider extends ContentProvider {
                 return Velocity_Data.CONTENT_TYPE;
             case VELOCITY_ITEM:
                 return Velocity_Data.CONTENT_ITEM_TYPE;
+            case MAGNETIC_DIR:
+                return Magnetic_Data.CONTENT_TYPE;
+            case MAGNETIC_ITEM:
+                return Magnetic_Data.CONTENT_ITEM_TYPE;
 
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
@@ -309,6 +372,10 @@ public class Provider extends ContentProvider {
 
             case VELOCITY_DIR:
                 count = database.update(DATABASE_TABLES[1], values, selection, selectionArgs);
+                break;
+
+            case MAGNETIC_DIR:
+                count = database.update(DATABASE_TABLES[2], values, selection, selectionArgs);
                 break;
 
             default:

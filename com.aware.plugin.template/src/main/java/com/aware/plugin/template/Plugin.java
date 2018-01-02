@@ -20,7 +20,6 @@ import com.aware.plugin.template.communication.MessageSender;
 import com.aware.plugin.template.communication.MessageRecipient;
 import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.aware.plugin.template.communication.messages.Message;
-import com.aware.plugin.template.sensor.listener.MetaWearAsyncSensorPersistingObserver;
 import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
 import com.aware.plugin.template.sensor.listener.impl.AccelerometerPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.GyroPersistingObserver;
@@ -187,7 +186,6 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
             try {
                 observers.forEach(MetaWearSensorObserver::terminate);
                 observers.clear();
-                disableLed();
                 board.get().disconnectAsync().waitForCompletion();
             } catch (InterruptedException ignored) {}
             finally {
@@ -269,22 +267,19 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
         final MetaWearBoard board = this.board.get();
 
         observers.forEach(observer -> observer.register(board));
-        enableLed();
+        setupLed();
     }
 
-    private void enableLed() {
+    private void setupLed() {
         final Led ledModule = board.get().getModule(Led.class);
         if (null != ledModule) {
             ledModule.play();
             ledModule.editPattern(Led.Color.GREEN, Led.PatternPreset.PULSE).commit();
         }
-    }
 
-    private void disableLed() {
-        final Led ledModule = board.get().getModule(Led.class);
-        if (null != ledModule) {
-            ledModule.stop(true);
-        }
+        final com.mbientlab.metawear.module.Settings settings = board.get().getModule(com.mbientlab.metawear.module.Settings.class);
+
+        settings.onDisconnectAsync(()-> ledModule.stop(true));
     }
 
     private void notifyUser(String title, String content, int notificationId) {
