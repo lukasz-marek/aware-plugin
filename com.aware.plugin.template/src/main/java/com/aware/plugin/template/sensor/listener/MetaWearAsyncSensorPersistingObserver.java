@@ -27,18 +27,15 @@ public abstract class MetaWearAsyncSensorPersistingObserver implements MetaWearS
     private final List<Supplier<Void>> tasksForTermination = new CopyOnWriteArrayList<>();
 
 
-    private final static short DATA_LIMIT_IN_MILLISECONDS = 200; // 1 sample per 200 ms => 1/0.2s == 5Hz
+    protected final static short DATA_LIMIT_IN_MILLISECONDS = 200; // 1 sample per 200 ms => 1/0.2s == 5Hz
+
+    protected final static float DATA_PRODUCTION_FREQUENCY = 5f; // 5Hz
+
 
     public MetaWearAsyncSensorPersistingObserver(Context context){
         final ContentResolver contentResolver = context.getContentResolver();
 
         providerClient = contentResolver.acquireContentProviderClient(Provider.AUTHORITY);
-    }
-
-    protected void limitData(DataProducer producer) {
-        producer.addRouteAsync(source -> {
-            source.limit(DATA_LIMIT_IN_MILLISECONDS);
-        });
     }
 
     /**

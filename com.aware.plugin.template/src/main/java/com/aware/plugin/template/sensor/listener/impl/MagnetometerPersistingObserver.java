@@ -50,11 +50,12 @@ public class MagnetometerPersistingObserver extends MetaWearAsyncSensorPersistin
 
         if (magnetometer != null) {
 
-            limitData(magnetometer.magneticField());
+            magnetometer.configure().outputDataRate(MagnetometerBmm150.OutputDataRate.ODR_6_HZ).commit();
 
-            magnetometer.magneticField().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-                processData(data);
-            })).continueWith((Continuation<Route, Void>) task -> {
+            magnetometer.magneticField().addRouteAsync(source -> {
+                source.limit(DATA_LIMIT_IN_MILLISECONDS);
+                source.stream((Subscriber) (data, env) -> processData(data));
+            }).continueWith((Continuation<Route, Void>) task -> {
 
                 addTerminationTask(() -> {
                     magnetometer.magneticField().stop();
