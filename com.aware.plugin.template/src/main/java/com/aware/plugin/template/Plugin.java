@@ -23,6 +23,7 @@ import com.aware.plugin.template.communication.messages.Message;
 import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
 import com.aware.plugin.template.sensor.listener.impl.AccelerometerPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.GyroPersistingObserver;
+import com.aware.plugin.template.sensor.listener.impl.MagnetometerPersistingObserver;
 import com.aware.utils.Aware_Plugin;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.android.BtleService;
@@ -262,6 +263,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
 
         observers.add(new AccelerometerPersistingObserver( this));
         observers.add(new GyroPersistingObserver(this));
+        observers.add(new MagnetometerPersistingObserver(this));
         /* add more observers here, order does not matter at all*/
 
         final MetaWearBoard board = this.board.get();

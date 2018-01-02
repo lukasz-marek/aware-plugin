@@ -49,6 +49,8 @@ public final class AccelerometerPersistingObserver extends MetaWearAsyncSensorPe
 
         if (accelerometer != null) {
 
+            limitData(accelerometer.acceleration());
+
             accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
 
                 processData(data);

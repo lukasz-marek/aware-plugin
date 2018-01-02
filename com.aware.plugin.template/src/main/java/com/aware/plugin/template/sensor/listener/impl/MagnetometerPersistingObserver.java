@@ -49,6 +49,9 @@ public class MagnetometerPersistingObserver extends MetaWearAsyncSensorPersistin
         final MagnetometerBmm150 magnetometer = metaWearBoard.getModule(MagnetometerBmm150.class);
 
         if (magnetometer != null) {
+
+            limitData(magnetometer.magneticField());
+
             magnetometer.magneticField().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
                 processData(data);
             })).continueWith((Continuation<Route, Void>) task -> {

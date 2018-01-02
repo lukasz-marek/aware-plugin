@@ -49,6 +49,8 @@ public class GyroPersistingObserver extends MetaWearAsyncSensorPersistingObserve
 
         if (gyroBmi160 != null) {
 
+            limitData(gyroBmi160.angularVelocity());
+
             gyroBmi160.angularVelocity().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
 
                 processData(data);
