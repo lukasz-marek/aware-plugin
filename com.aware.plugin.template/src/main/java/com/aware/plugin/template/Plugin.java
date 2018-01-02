@@ -249,7 +249,14 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
                     }
                     return null;
                 }).onSuccess((Continuation<Void, Void>) task -> {
+                    board.get().onUnexpectedDisconnect((int status)->{
+                        disconnectBoard();
+                        createDeviceSelectionNotification(getString(R.string.no_device_selected_notification_title), getString(R.string.no_device_selected_notification_content), NotificationIdentifier.NO_DEVICE_SELECTED.getIdentifier());
+                    });
+
                     initializeBoardListeners();
+                    setupLed();
+
                     return null;
                 }).waitForCompletion();
 
@@ -259,6 +266,8 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
         }else{
         notifyUser(getString(R.string.bluetooth_not_available_title), getString(R.string.bluetooth_not_available_content), NotificationIdentifier.BLUETOOTH_NOT_SUPPORTED.getIdentifier());        }
     }
+
+
 
     private synchronized void initializeBoardListeners() {
 
@@ -270,7 +279,6 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
         final MetaWearBoard board = this.board.get();
 
         observers.forEach(observer -> observer.register(board));
-        setupLed();
     }
 
     private void setupLed() {
