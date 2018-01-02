@@ -187,6 +187,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
             try {
                 observers.forEach(MetaWearSensorObserver::terminate);
                 observers.clear();
+                board.get().tearDown();
                 board.get().disconnectAsync().waitForCompletion();
             } catch (InterruptedException ignored) {}
             finally {
