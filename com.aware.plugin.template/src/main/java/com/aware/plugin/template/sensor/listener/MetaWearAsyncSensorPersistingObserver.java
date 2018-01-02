@@ -19,20 +19,18 @@ import java.util.function.Supplier;
  * Created by lmarek on 27.12.2017.
  */
 
-public abstract class MetaWearAsyncSensorObserver {
+public abstract class MetaWearAsyncSensorPersistingObserver implements MetaWearSensorObserver{
 
     private final ContentProviderClient providerClient;
 
     private final List<Supplier<Void>> tasksForTermination = new CopyOnWriteArrayList<>();
 
 
-    public MetaWearAsyncSensorObserver(MetaWearBoard metaWearBoard, Context context){
+    public MetaWearAsyncSensorPersistingObserver(Context context){
         final Context observerContext = context;
         final ContentResolver contentResolver = observerContext.getContentResolver();
 
         providerClient = contentResolver.acquireContentProviderClient(Provider.AUTHORITY);
-
-        registerObserver(metaWearBoard);
     }
 
     /**
@@ -46,7 +44,7 @@ public abstract class MetaWearAsyncSensorObserver {
 
     protected abstract ContentValues convertToDatabaseRecord(Data data);
 
-    protected abstract void registerObserver(MetaWearBoard metaWearBoard);
+    public abstract void register(MetaWearBoard metaWearBoard);
 
     public final void terminate(){
         tasksForTermination.forEach(Supplier::get);

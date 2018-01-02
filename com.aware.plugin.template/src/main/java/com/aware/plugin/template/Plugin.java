@@ -20,9 +20,10 @@ import com.aware.plugin.template.communication.MessageSender;
 import com.aware.plugin.template.communication.MessageRecipient;
 import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.aware.plugin.template.communication.messages.Message;
-import com.aware.plugin.template.sensor.listener.MetaWearAsyncSensorObserver;
-import com.aware.plugin.template.sensor.listener.impl.AccelerometerObserver;
-import com.aware.plugin.template.sensor.listener.impl.GyroObserver;
+import com.aware.plugin.template.sensor.listener.MetaWearAsyncSensorPersistingObserver;
+import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
+import com.aware.plugin.template.sensor.listener.impl.AccelerometerPersistingObserver;
+import com.aware.plugin.template.sensor.listener.impl.GyroPersistingObserver;
 import com.aware.utils.Aware_Plugin;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.android.BtleService;
@@ -42,7 +43,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
 
     private final AtomicReference<MetaWearBoard> board = new AtomicReference<>();
 
-    private final List<MetaWearAsyncSensorObserver> observers = new CopyOnWriteArrayList<>();
+    private final List<MetaWearSensorObserver> observers = new CopyOnWriteArrayList<>();
 
     private NotificationManager notificationManager;
 
@@ -184,7 +185,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
     private synchronized void disconnectBoard() {
         if (isBoardConnected()) {
             try {
-                observers.forEach(MetaWearAsyncSensorObserver::terminate);
+                observers.forEach(MetaWearSensorObserver::terminate);
                 observers.clear();
                 disableLed();
                 board.get().disconnectAsync().waitForCompletion();
@@ -259,11 +260,15 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
         notifyUser(getString(R.string.bluetooth_not_available_title), getString(R.string.bluetooth_not_available_content), NotificationIdentifier.BLUETOOTH_NOT_SUPPORTED.getIdentifier());        }
     }
 
-    private void initializeBoardListeners() {
-        observers.add(new AccelerometerObserver(board.get(), this));
-        observers.add(new GyroObserver(board.get(), this));
-        /* add more listeners below*/
+    private synchronized void initializeBoardListeners() {
 
+        observers.add(new AccelerometerPersistingObserver( this));
+        observers.add(new GyroPersistingObserver(this));
+        /* add more observers here, order does not matter at all*/
+
+        final MetaWearBoard board = this.board.get();
+
+        observers.forEach(observer -> observer.register(board));
         enableLed();
     }
 
