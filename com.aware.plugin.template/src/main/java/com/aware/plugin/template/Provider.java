@@ -24,7 +24,7 @@ public class Provider extends ContentProvider {
 
     public static String AUTHORITY = "com.aware.plugin.template.provider.mbientlab"; //change to package.provider.your_plugin_name
 
-    public static final int DATABASE_VERSION = 4; //increase this if you make changes to the database structure, i.e., rename columns, etc.
+    public static final int DATABASE_VERSION = 5; //increase this if you make changes to the database structure, i.e., rename columns, etc.
     public static final String DATABASE_NAME = "plugin_mbientlab.db"; //the database filename, use plugin_xxx for plugins.
 
     //Add here your database table names, as many as you need
@@ -32,6 +32,7 @@ public class Provider extends ContentProvider {
     public static final String DB_VELOCITY = "velocity";
     public static final String DB_MAGNETIC = "magnetic";
     public static final String DB_TEMPERATURE = "temperature";
+    public static final String DB_PRESSURE = "pressure";
 
 
 
@@ -49,12 +50,17 @@ public class Provider extends ContentProvider {
     private static final int TEMPERATURE_DIR = 7;
     private static final int TEMPERATURE_ITEM = 8;
 
+
+    private static final int PRESSURE_DIR = 9;
+    private static final int PRESSURE_ITEM = 10;
+
     //Put tables names in this array so AWARE knows what you have on the database
     public static final String[] DATABASE_TABLES = {
             DB_ACCELERATION,
             DB_VELOCITY,
             DB_MAGNETIC,
-            DB_TEMPERATURE
+            DB_TEMPERATURE,
+            DB_PRESSURE
     };
 
     //These are columns that we need to sync data, don't change this!
@@ -114,6 +120,16 @@ public class Provider extends ContentProvider {
 
     }
 
+    public static final class Pressure_Data implements AWAREColumns {
+        public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + DB_PRESSURE);
+        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.aware.plugin.template.provider.pressure"; //modify me
+        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.com.aware.plugin.template.provider.pressure"; //modify me
+
+        //Note: integers and strings don't need a type prefix_
+        public static final String PRESSURE_IN_PASCALS = "double_pressure"; //a double_ prefix makes a MySQL DOUBLE column
+
+    }
+
     //Define each database table fields
     private static final String DB_ACCELERATION_FIELDS =
             Acceleration_Data._ID + " integer primary key autoincrement," +
@@ -139,12 +155,17 @@ public class Provider extends ContentProvider {
                     Magnetic_Data.Y + " real default 0," +
                     Magnetic_Data.Z + " real default 0";
 
-
     private static final String DB_TEMPERATURE_FIELDS =
             Temperature_Data._ID + " integer primary key autoincrement," +
                     Temperature_Data.TIMESTAMP + " real default 0," +
                     Temperature_Data.DEVICE_ID + " text default ''," +
                     Temperature_Data.TEMPERATURE_IN_CELSIUS + " real default 0";
+
+    private static final String DB_PRESSURE_FIELDS =
+            Pressure_Data._ID + " integer primary key autoincrement," +
+                    Pressure_Data.TIMESTAMP + " real default 0," +
+                    Pressure_Data.DEVICE_ID + " text default ''," +
+                    Pressure_Data.PRESSURE_IN_PASCALS + " real default 0";
 
     /**
      * Share the fields with AWARE so we can replicate the table schema on the server
@@ -153,7 +174,8 @@ public class Provider extends ContentProvider {
             DB_ACCELERATION_FIELDS,
             DB_VELOCITY_FIELDS,
             DB_MAGNETIC_FIELDS,
-            DB_TEMPERATURE_FIELDS
+            DB_TEMPERATURE_FIELDS,
+            DB_PRESSURE_FIELDS
     };
 
     //Helper variables for ContentProvider - DO NOT CHANGE
@@ -178,6 +200,7 @@ public class Provider extends ContentProvider {
 
     private HashMap<String, String> temperatureMap;
 
+    private HashMap<String, String> pressureMap;
 
 
 
@@ -211,6 +234,9 @@ public class Provider extends ContentProvider {
         sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[3], TEMPERATURE_DIR);
         sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[3] + "/#", TEMPERATURE_ITEM);
 
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[4], PRESSURE_DIR);
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[4] + "/#", PRESSURE_ITEM);
+
         //Create each table hashmap so Android knows how to insert data to the database. Put ALL table fields.
         accelerationMap = new HashMap<>();
         accelerationMap.put(Acceleration_Data._ID, Acceleration_Data._ID);
@@ -242,6 +268,12 @@ public class Provider extends ContentProvider {
         temperatureMap.put(Temperature_Data.DEVICE_ID, Temperature_Data.DEVICE_ID);
         temperatureMap.put(Temperature_Data.TEMPERATURE_IN_CELSIUS, Temperature_Data.TEMPERATURE_IN_CELSIUS);
 
+        pressureMap = new HashMap<>();
+        pressureMap.put(Pressure_Data._ID, Pressure_Data._ID);
+        pressureMap.put(Pressure_Data.TIMESTAMP, Pressure_Data.TIMESTAMP);
+        pressureMap.put(Pressure_Data.DEVICE_ID, Pressure_Data.DEVICE_ID);
+        pressureMap.put(Pressure_Data.PRESSURE_IN_PASCALS, Pressure_Data.PRESSURE_IN_PASCALS);
+
         return true;
     }
 
@@ -266,6 +298,9 @@ public class Provider extends ContentProvider {
                 break;
             case TEMPERATURE_DIR:
                 count = database.delete(DATABASE_TABLES[3], selection, selectionArgs);
+                break;
+            case PRESSURE_DIR:
+                count = database.delete(DATABASE_TABLES[4], selection, selectionArgs);
                 break;
             default:
                 database.endTransaction();
@@ -335,6 +370,17 @@ public class Provider extends ContentProvider {
                 }
                 database.endTransaction();
                 throw new SQLException("Failed to insert row into " + uri);
+            case PRESSURE_DIR:
+                _id = database.insert(DATABASE_TABLES[4], Pressure_Data.DEVICE_ID, values);
+                database.setTransactionSuccessful();
+                database.endTransaction();
+                if (_id > 0) {
+                    Uri dataUri = ContentUris.withAppendedId(Pressure_Data.CONTENT_URI, _id);
+                    getContext().getContentResolver().notifyChange(dataUri, null);
+                    return dataUri;
+                }
+                database.endTransaction();
+                throw new SQLException("Failed to insert row into " + uri);
             default:
                 database.endTransaction();
                 throw new IllegalArgumentException("Unknown URI " + uri);
@@ -366,6 +412,10 @@ public class Provider extends ContentProvider {
             case TEMPERATURE_DIR:
                 qb.setTables(DATABASE_TABLES[3]);
                 qb.setProjectionMap(temperatureMap); //the hashmap of the table
+                break;
+            case PRESSURE_DIR:
+                qb.setTables(DATABASE_TABLES[4]);
+                qb.setProjectionMap(pressureMap); //the hashmap of the table
                 break;
 
             default:
@@ -407,6 +457,10 @@ public class Provider extends ContentProvider {
                 return Temperature_Data.CONTENT_TYPE;
             case TEMPERATURE_ITEM:
                 return Temperature_Data.CONTENT_ITEM_TYPE;
+            case PRESSURE_DIR:
+                return Pressure_Data.CONTENT_TYPE;
+            case PRESSURE_ITEM:
+                return Pressure_Data.CONTENT_ITEM_TYPE;
 
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
@@ -438,6 +492,10 @@ public class Provider extends ContentProvider {
 
             case TEMPERATURE_DIR:
                 count = database.update(DATABASE_TABLES[3], values, selection, selectionArgs);
+                break;
+
+            case PRESSURE_DIR:
+                count = database.update(DATABASE_TABLES[4], values, selection, selectionArgs);
                 break;
 
             default:

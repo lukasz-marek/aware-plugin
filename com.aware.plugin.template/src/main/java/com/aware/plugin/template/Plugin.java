@@ -24,6 +24,7 @@ import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
 import com.aware.plugin.template.sensor.listener.impl.AccelerometerDataPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.GyroDataPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.MagnetometerDataPersistingObserver;
+import com.aware.plugin.template.sensor.listener.impl.PressureDataPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.TemperatureDataPersistingObserver;
 import com.aware.utils.Aware_Plugin;
 import com.mbientlab.metawear.MetaWearBoard;
@@ -281,6 +282,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
         observers.add(new GyroDataPersistingObserver(this));
         observers.add(new MagnetometerDataPersistingObserver(this));
         observers.add(new TemperatureDataPersistingObserver(this));
+        observers.add(new PressureDataPersistingObserver(this));
 
         /* add more observers here, order does not matter at all*/
 
