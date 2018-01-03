@@ -21,9 +21,10 @@ import com.aware.plugin.template.communication.MessageRecipient;
 import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.aware.plugin.template.communication.messages.Message;
 import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
-import com.aware.plugin.template.sensor.listener.impl.AccelerometerPersistingObserver;
-import com.aware.plugin.template.sensor.listener.impl.GyroPersistingObserver;
-import com.aware.plugin.template.sensor.listener.impl.MagnetometerPersistingObserver;
+import com.aware.plugin.template.sensor.listener.impl.AccelerometerDataPersistingObserver;
+import com.aware.plugin.template.sensor.listener.impl.GyroDataPersistingObserver;
+import com.aware.plugin.template.sensor.listener.impl.MagnetometerDataPersistingObserver;
+import com.aware.plugin.template.sensor.listener.impl.TemperatureDataPersistingObserver;
 import com.aware.utils.Aware_Plugin;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.android.BtleService;
@@ -187,6 +188,10 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
             try {
                 observers.forEach(MetaWearSensorObserver::terminate);
                 observers.clear();
+                final Led ledModule = board.get().getModule(Led.class);
+                if (null != ledModule) {
+                    ledModule.stop(true);
+                }
                 board.get().tearDown();
                 board.get().disconnectAsync().waitForCompletion();
             } catch (InterruptedException ignored) {}
@@ -249,7 +254,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
                     }
                     return null;
                 }).onSuccess((Continuation<Void, Void>) task -> {
-                    
+
                     board.get().onUnexpectedDisconnect((int status)->{
                         disconnectBoard();
                         createDeviceSelectionNotification(getString(R.string.connection_lost_notification_title), getString(R.string.connection_lost_notification_content), NotificationIdentifier.NO_DEVICE_SELECTED.getIdentifier());
@@ -272,9 +277,11 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
 
     private synchronized void initializeBoardListeners() {
 
-        observers.add(new AccelerometerPersistingObserver( this));
-        observers.add(new GyroPersistingObserver(this));
-        observers.add(new MagnetometerPersistingObserver(this));
+        observers.add(new AccelerometerDataPersistingObserver( this));
+        observers.add(new GyroDataPersistingObserver(this));
+        observers.add(new MagnetometerDataPersistingObserver(this));
+        observers.add(new TemperatureDataPersistingObserver(this));
+
         /* add more observers here, order does not matter at all*/
 
         final MetaWearBoard board = this.board.get();

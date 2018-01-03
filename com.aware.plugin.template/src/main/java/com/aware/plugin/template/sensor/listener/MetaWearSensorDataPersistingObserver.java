@@ -20,7 +20,7 @@ import java.util.function.Supplier;
  * Created by lmarek on 27.12.2017.
  */
 
-public abstract class MetaWearAsyncSensorPersistingObserver implements MetaWearSensorObserver{
+public abstract class MetaWearSensorDataPersistingObserver implements MetaWearSensorObserver{
 
     private final ContentProviderClient providerClient;
 
@@ -32,7 +32,7 @@ public abstract class MetaWearAsyncSensorPersistingObserver implements MetaWearS
     protected final static float DATA_PRODUCTION_FREQUENCY = 5f; // 5Hz
 
 
-    public MetaWearAsyncSensorPersistingObserver(Context context){
+    public MetaWearSensorDataPersistingObserver(Context context){
         final ContentResolver contentResolver = context.getContentResolver();
 
         providerClient = contentResolver.acquireContentProviderClient(Provider.AUTHORITY);
