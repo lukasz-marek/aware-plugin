@@ -5,7 +5,7 @@ import android.content.Context;
 import android.net.Uri;
 
 import com.aware.plugin.template.Provider;
-import com.aware.plugin.template.sensor.listener.MetaWearSensorDataPersistingObserver;
+import com.aware.plugin.template.sensor.listener.MetaWearAsyncSensorDataPersistingObserver;
 import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.Route;
@@ -22,7 +22,7 @@ import bolts.Continuation;
  * Created by lmarek on 27.12.2017.
  */
 
-public final class AccelerometerDataPersistingObserver extends MetaWearSensorDataPersistingObserver {
+public final class AccelerometerDataPersistingObserver extends MetaWearAsyncSensorDataPersistingObserver {
 
     public AccelerometerDataPersistingObserver(Context context) {
         super(context);
@@ -58,7 +58,6 @@ public final class AccelerometerDataPersistingObserver extends MetaWearSensorDat
                 addTerminationTask(() -> {
                     accelerometer.acceleration().stop();
                     accelerometer.stop();
-                    return null;
                 });
                 accelerometer.acceleration().start();
                 accelerometer.start();

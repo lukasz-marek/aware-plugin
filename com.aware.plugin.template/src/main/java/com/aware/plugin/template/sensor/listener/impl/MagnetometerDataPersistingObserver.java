@@ -5,7 +5,7 @@ import android.content.Context;
 import android.net.Uri;
 
 import com.aware.plugin.template.Provider;
-import com.aware.plugin.template.sensor.listener.MetaWearSensorDataPersistingObserver;
+import com.aware.plugin.template.sensor.listener.MetaWearAsyncSensorDataPersistingObserver;
 import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.Route;
@@ -22,7 +22,7 @@ import bolts.Continuation;
  * Created by lmarek on 02.01.2018.
  */
 
-public class MagnetometerDataPersistingObserver extends MetaWearSensorDataPersistingObserver {
+public class MagnetometerDataPersistingObserver extends MetaWearAsyncSensorDataPersistingObserver {
 
     public MagnetometerDataPersistingObserver(Context context) {
         super(context);
@@ -60,7 +60,6 @@ public class MagnetometerDataPersistingObserver extends MetaWearSensorDataPersis
                 addTerminationTask(() -> {
                     magnetometer.magneticField().stop();
                     magnetometer.stop();
-                    return null;
                 });
 
                 magnetometer.magneticField().start();

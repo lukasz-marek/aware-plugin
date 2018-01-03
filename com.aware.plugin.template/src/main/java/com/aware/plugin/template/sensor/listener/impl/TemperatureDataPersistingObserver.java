@@ -5,7 +5,8 @@ import android.content.Context;
 import android.net.Uri;
 
 import com.aware.plugin.template.Provider;
-import com.aware.plugin.template.sensor.listener.MetaWearSensorDataPersistingObserver;
+import com.aware.plugin.template.sensor.listener.MetaWearAsyncSensorDataPersistingObserver;
+import com.aware.plugin.template.sensor.listener.MetaWearForcedSensorDataPersistingObserver;
 import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.Route;
@@ -25,12 +26,10 @@ import bolts.Continuation;
  * Created by lmarek on 03.01.2018.
  */
 
-public class TemperatureDataPersistingObserver extends MetaWearSensorDataPersistingObserver {
-    private final ScheduledExecutorService scheduledExecutorService;
+public class TemperatureDataPersistingObserver extends MetaWearForcedSensorDataPersistingObserver {
 
     public TemperatureDataPersistingObserver(Context context) {
         super(context);
-        scheduledExecutorService = Executors.newScheduledThreadPool(1);
     }
 
     @Override
@@ -55,16 +54,8 @@ public class TemperatureDataPersistingObserver extends MetaWearSensorDataPersist
 
         if (null != sensor) {
             sensor.addRouteAsync(source -> source.stream((Subscriber) (data, env) -> processData(data))).continueWith((Continuation<Route, Void>) task -> {
-                final ScheduledFuture<?> scheduledFuture = scheduledExecutorService.scheduleAtFixedRate(sensor::read, 0, DATA_LIMIT_IN_MILLISECONDS, TimeUnit.MILLISECONDS);
-                addTerminationTask(() -> {
-                    scheduledFuture.cancel(false);
-                    try {
-                        scheduledExecutorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                });
+                addSensorReadTask(sensor::read);
+
                 return null;
             });
         }

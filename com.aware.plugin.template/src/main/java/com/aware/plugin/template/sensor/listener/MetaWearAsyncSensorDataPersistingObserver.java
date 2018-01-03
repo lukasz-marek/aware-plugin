@@ -20,11 +20,11 @@ import java.util.function.Supplier;
  * Created by lmarek on 27.12.2017.
  */
 
-public abstract class MetaWearSensorDataPersistingObserver implements MetaWearSensorObserver{
+public abstract class MetaWearAsyncSensorDataPersistingObserver implements MetaWearSensorObserver{
 
     private final ContentProviderClient providerClient;
 
-    private final List<Supplier<Void>> tasksForTermination = new CopyOnWriteArrayList<>();
+    private final List<Runnable> tasksForTermination = new CopyOnWriteArrayList<>();
 
 
     protected final static short DATA_LIMIT_IN_MILLISECONDS = 200; // 1 sample per 200 ms => 1/0.2s == 5Hz
@@ -32,7 +32,7 @@ public abstract class MetaWearSensorDataPersistingObserver implements MetaWearSe
     protected final static float DATA_PRODUCTION_FREQUENCY = 5f; // 5Hz
 
 
-    public MetaWearSensorDataPersistingObserver(Context context){
+    public MetaWearAsyncSensorDataPersistingObserver(Context context){
         final ContentResolver contentResolver = context.getContentResolver();
 
         providerClient = contentResolver.acquireContentProviderClient(Provider.AUTHORITY);
@@ -52,11 +52,11 @@ public abstract class MetaWearSensorDataPersistingObserver implements MetaWearSe
     public abstract void register(MetaWearBoard metaWearBoard);
 
     public final void terminate(){
-        tasksForTermination.forEach(Supplier::get);
+        tasksForTermination.forEach(Runnable::run);
         providerClient.close();
     }
 
-    protected final void addTerminationTask(Supplier<Void> task){
+    protected final void addTerminationTask(Runnable task){
         tasksForTermination.add(task);
 
     }
