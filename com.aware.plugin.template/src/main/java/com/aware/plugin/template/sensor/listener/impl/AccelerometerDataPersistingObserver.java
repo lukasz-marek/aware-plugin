@@ -13,9 +13,6 @@ import com.mbientlab.metawear.Subscriber;
 import com.mbientlab.metawear.data.Acceleration;
 import com.mbientlab.metawear.module.Accelerometer;
 
-import java.sql.Timestamp;
-import java.util.Calendar;
-
 import bolts.Continuation;
 
 /**
@@ -28,20 +25,12 @@ public final class AccelerometerDataPersistingObserver extends MetaWearAsyncSens
         super(context);
     }
 
-    @Override
-    protected ContentValues convertToDatabaseRecord(Data data) {
+    protected void fillWithSensorSpecificData(ContentValues contentValues, Data data) {
         final Acceleration acceleration = data.value(Acceleration.class);
-        final Calendar timestamp = data.timestamp();
 
-        final ContentValues contentValues = new ContentValues();
-        final Timestamp sqlTimestamp = new Timestamp(timestamp.getTime().getTime());
-
-        contentValues.put(Provider.Acceleration_Data.TIMESTAMP, sqlTimestamp.toString());
         contentValues.put(Provider.Acceleration_Data.X, acceleration.x());
         contentValues.put(Provider.Acceleration_Data.Y, acceleration.y());
         contentValues.put(Provider.Acceleration_Data.Z, acceleration.y());
-
-        return contentValues;
     }
 
     public void register(MetaWearBoard metaWearBoard) {
@@ -52,7 +41,7 @@ public final class AccelerometerDataPersistingObserver extends MetaWearAsyncSens
             accelerometer.configure().odr(DATA_PRODUCTION_FREQUENCY).commit();
 
             accelerometer.acceleration().addRouteAsync(source -> {
-                source.limit(DATA_LIMIT_IN_MILLISECONDS);
+                source.limit(DATA_READ_LIMIT_IN_MILLISECONDS);
                 source.stream((Subscriber) (data, env) -> processData(data));
             }).continueWith((Continuation<Route, Void>) task -> {
                 addTerminationTask(() -> {

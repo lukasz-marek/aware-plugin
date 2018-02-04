@@ -22,9 +22,9 @@ public abstract class MetaWearForcedSensorDataPersistingObserver extends MetaWea
 
     /**
      * Simulate async sensor behaviour by forcing sensor read in a loop.
-     * @param sensorReadTask task to be executed, usually a reference to read method of forced data producer.
+     * @param sensorReadTask task to be executed in a loop, usually a reference to read method of forced data producer.
      */
     protected void addSensorReadTask(Runnable sensorReadTask) {
-        scheduledExecutorService.scheduleAtFixedRate(sensorReadTask, 0, DATA_LIMIT_IN_MILLISECONDS, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(sensorReadTask, 0, DATA_READ_LIMIT_IN_MILLISECONDS, TimeUnit.MILLISECONDS);
     }
 }

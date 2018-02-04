@@ -16,8 +16,8 @@ import android.support.v4.app.NotificationCompat;
 
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
-import com.aware.plugin.template.communication.MessageSender;
 import com.aware.plugin.template.communication.MessageRecipient;
+import com.aware.plugin.template.communication.MessageSender;
 import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.aware.plugin.template.communication.messages.Message;
 import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;

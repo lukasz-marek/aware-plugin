@@ -12,8 +12,6 @@ import com.mbientlab.metawear.Route;
 import com.mbientlab.metawear.Subscriber;
 import com.mbientlab.metawear.module.BarometerBosch;
 
-import java.sql.Timestamp;
-import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 
 import bolts.Continuation;
@@ -28,28 +26,20 @@ public class PressureDataPersistingObserver extends MetaWearAsyncSensorDataPersi
         super(context);
     }
 
-    @Override
-    protected ContentValues convertToDatabaseRecord(Data data) {
+    protected void fillWithSensorSpecificData(ContentValues contentValues, Data data) {
         final Float temperature = data.value(Float.class);
-        final Calendar timestamp = data.timestamp();
 
-        final ContentValues contentValues = new ContentValues();
-
-        final Timestamp sqlTimestamp = new Timestamp(timestamp.getTime().getTime());
-        contentValues.put(Provider.Pressure_Data.TIMESTAMP, sqlTimestamp.toString());
         contentValues.put(Provider.Pressure_Data.PRESSURE_IN_PASCALS, temperature);
-
-        return contentValues;
     }
 
     @Override
     public void register(MetaWearBoard metaWearBoard) {
         final BarometerBosch barometer = metaWearBoard.getModule(BarometerBosch.class);
-        barometer.configure().standbyTime(TimeUnit.MILLISECONDS.convert(DATA_LIMIT_IN_MILLISECONDS, TimeUnit.SECONDS)).commit();
+        barometer.configure().standbyTime(TimeUnit.MILLISECONDS.convert(DATA_READ_LIMIT_IN_MILLISECONDS, TimeUnit.SECONDS)).commit();
 
         barometer.pressure().addRouteAsync(source -> {
 
-            source.limit(DATA_LIMIT_IN_MILLISECONDS);
+            source.limit(DATA_READ_LIMIT_IN_MILLISECONDS);
             source.stream((Subscriber) (data, env) -> processData(data));
 
         }).continueWith((Continuation<Route, Void>) task -> {

@@ -11,6 +11,8 @@ import com.aware.plugin.template.Provider;
 import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
 
+import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,7 +29,7 @@ public abstract class MetaWearAsyncSensorDataPersistingObserver implements MetaW
 
     private final AtomicBoolean isTerminating = new AtomicBoolean();
 
-    protected final static short DATA_LIMIT_IN_MILLISECONDS = 200; // 1 sample per 200 ms => 1/0.2s == 5Hz
+    protected final static short DATA_READ_LIMIT_IN_MILLISECONDS = 200; // 1 sample per 200 ms => 1/0.2s == 5Hz
 
     protected final static float DATA_PRODUCTION_FREQUENCY = 5f; // 5Hz
 
@@ -53,7 +55,18 @@ public abstract class MetaWearAsyncSensorDataPersistingObserver implements MetaW
         }
     }
 
-    protected abstract ContentValues convertToDatabaseRecord(Data data);
+    private ContentValues convertToDatabaseRecord(Data data){
+        final Calendar timestamp = data.timestamp();
+
+        final ContentValues contentValues = new ContentValues();
+        final Timestamp sqlTimestamp = new Timestamp(timestamp.getTime().getTime());
+        contentValues.put(Provider.AWAREColumns.TIMESTAMP, sqlTimestamp.toString());
+
+        fillWithSensorSpecificData(contentValues, data);
+        return contentValues;
+    }
+
+    protected abstract void fillWithSensorSpecificData(ContentValues contentValues, Data data);
 
     public abstract void register(MetaWearBoard metaWearBoard);
 
