@@ -2,6 +2,8 @@ package com.aware.plugin.template.sensor.listener;
 
 import android.content.Context;
 
+import com.aware.plugin.template.data.transmission.DataBus;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -14,8 +16,8 @@ public abstract class MetaWearForcedSensorDataPersistingObserver extends MetaWea
 
     private final ScheduledExecutorService scheduledExecutorService;
 
-    public MetaWearForcedSensorDataPersistingObserver(Context context) {
-        super(context);
+    public MetaWearForcedSensorDataPersistingObserver(DataBus dataBus) {
+        super(dataBus);
         scheduledExecutorService = Executors.newScheduledThreadPool(1);
         addTerminationTask(scheduledExecutorService::shutdown);
     }

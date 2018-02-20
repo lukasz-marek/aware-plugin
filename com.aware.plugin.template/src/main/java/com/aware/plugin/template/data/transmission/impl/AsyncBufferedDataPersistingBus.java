@@ -13,7 +13,7 @@ public class AsyncBufferedDataPersistingBus extends AsyncBufferedDataBus {
 
     private final ContentProviderClient contentProviderClient;
 
-    protected AsyncBufferedDataPersistingBus(long bufferSize, ContentProviderClient providerClient) {
+    public AsyncBufferedDataPersistingBus(long bufferSize, ContentProviderClient providerClient) {
         super(bufferSize);
         this.contentProviderClient = providerClient;
     }
@@ -25,5 +25,11 @@ public class AsyncBufferedDataPersistingBus extends AsyncBufferedDataBus {
         } catch (RemoteException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void terminate() {
+        super.terminate();
+        contentProviderClient.close();
     }
 }

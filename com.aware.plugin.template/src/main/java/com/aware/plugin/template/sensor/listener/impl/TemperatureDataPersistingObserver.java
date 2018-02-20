@@ -5,6 +5,7 @@ import android.content.Context;
 import android.net.Uri;
 
 import com.aware.plugin.template.Provider;
+import com.aware.plugin.template.data.transmission.DataBus;
 import com.aware.plugin.template.sensor.listener.MetaWearForcedSensorDataPersistingObserver;
 import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
@@ -20,8 +21,8 @@ import bolts.Continuation;
 
 public class TemperatureDataPersistingObserver extends MetaWearForcedSensorDataPersistingObserver {
 
-    public TemperatureDataPersistingObserver(Context context) {
-        super(context);
+    public TemperatureDataPersistingObserver(DataBus dataBus) {
+        super(dataBus);
     }
 
     protected void fillWithSensorSpecificData(ContentValues contentValues, Data data) {

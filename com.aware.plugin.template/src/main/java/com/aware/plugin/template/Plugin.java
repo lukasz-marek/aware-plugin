@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.ComponentName;
+import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -20,6 +21,8 @@ import com.aware.plugin.template.communication.MessageRecipient;
 import com.aware.plugin.template.communication.MessageSender;
 import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.aware.plugin.template.communication.messages.Message;
+import com.aware.plugin.template.data.transmission.DataBus;
+import com.aware.plugin.template.data.transmission.impl.AsyncBufferedDataPersistingBus;
 import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
 import com.aware.plugin.template.sensor.listener.impl.AccelerometerDataPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.GyroDataPersistingObserver;
@@ -27,6 +30,7 @@ import com.aware.plugin.template.sensor.listener.impl.MagnetometerDataPersisting
 import com.aware.plugin.template.sensor.listener.impl.PressureDataPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.TemperatureDataPersistingObserver;
 import com.aware.utils.Aware_Plugin;
+import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.android.BtleService;
 import com.mbientlab.metawear.module.Led;
@@ -45,9 +49,14 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
 
     private final AtomicReference<MetaWearBoard> board = new AtomicReference<>();
 
+    private final AtomicReference<DataBus> dataBus = new AtomicReference<>();
+
+
     private final List<MetaWearSensorObserver> observers = new CopyOnWriteArrayList<>();
 
     private NotificationManager notificationManager;
+
+    private final long bufferSize = 10_000L;
 
     @Override
     public void onCreate() {
@@ -78,6 +87,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
 
         //REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_COARSE_LOCATION);
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
     }
 
     /**
@@ -159,6 +169,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
             if (!isBoardConnected()) {
                 createDeviceSelectionNotification(getString(R.string.no_device_selected_notification_title), getString(R.string.no_device_selected_notification_content), NotificationIdentifier.NO_DEVICE_SELECTED.getIdentifier());
             }
+
         }
 
         return START_STICKY;
@@ -195,8 +206,10 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
                 }
                 board.get().tearDown();
                 board.get().disconnectAsync().waitForCompletion();
+                dataBus.get().terminate();
             } catch (InterruptedException ignored) {}
             finally {
+                dataBus.set(null);
                 board.set(null);
             }
         }
@@ -235,6 +248,17 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
 
     private void connectWithBoard(String macAddress) {
         cancelAllNotifications();
+
+
+
+        if(dataBus.get() == null){
+
+            final ContentResolver contentResolver = this.getContentResolver();
+
+            final ContentProviderClient providerClient = contentResolver.acquireContentProviderClient(Provider.AUTHORITY);
+
+            dataBus.set(new AsyncBufferedDataPersistingBus(bufferSize, providerClient));
+        }
 
         final BluetoothManager btManager =
                 (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -278,11 +302,13 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
 
     private synchronized void initializeBoardListeners() {
 
-        observers.add(new AccelerometerDataPersistingObserver( this));
-        observers.add(new GyroDataPersistingObserver(this));
-        observers.add(new MagnetometerDataPersistingObserver(this));
-        observers.add(new TemperatureDataPersistingObserver(this));
-        observers.add(new PressureDataPersistingObserver(this));
+        final DataBus bus = dataBus.get();
+
+        observers.add(new AccelerometerDataPersistingObserver( bus));
+        observers.add(new GyroDataPersistingObserver(bus));
+        observers.add(new MagnetometerDataPersistingObserver(bus));
+        observers.add(new TemperatureDataPersistingObserver(bus));
+        observers.add(new PressureDataPersistingObserver(bus));
 
         /* add more observers here, order does not matter at all*/
 
