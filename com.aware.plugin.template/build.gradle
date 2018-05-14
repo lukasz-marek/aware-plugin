@@ -2,7 +2,6 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion compile_sdk
-    buildToolsVersion build_tools
 
     defaultConfig {
         applicationId "com.aware.plugin.template" //EDIT ME
@@ -34,6 +33,7 @@ android {
         targetCompatibility 1.8
         sourceCompatibility 1.8
     }
+    buildToolsVersion '27.0.3'
 }
 
 if (System.getenv("storeFile") != null && System.getenv("storePassword") != null && System.getenv("keyAlias") != null && System.getenv("keyPassword") != null) {
@@ -47,7 +47,7 @@ if (System.getenv("storeFile") != null && System.getenv("storePassword") != null
 }
 
 repositories {
-    maven { url 'https://jitpack.io' } //this allows library generation directly from GitHub source-code
+    maven { url "https://jitpack.io" } //this allows library generation directly from GitHub source-code
     ivy {
         url "http://ivyrep.mbientlab.com"
         layout "gradle"
@@ -63,9 +63,8 @@ dependencies {
     implementation "com.github.denzilferreira:aware-client:$aware_libs"
     implementation "com.android.support:appcompat-v7:$support_libs"
     implementation "com.android.support:gridlayout-v7:$support_libs"
-    compile 'com.mbientlab:metawear:3.2.2'
-    compile 'com.mbientlab.bletoolbox:scanner:0.2.3'
-    // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
-    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
+    implementation 'com.mbientlab:metawear:3.2.2'
+    implementation 'com.mbientlab.bletoolbox:scanner:0.2.3'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
 
 }
