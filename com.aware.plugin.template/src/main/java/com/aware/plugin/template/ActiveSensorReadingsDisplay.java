@@ -24,6 +24,11 @@ public class ActiveSensorReadingsDisplay extends Activity {
         super.onCreate(savedInstanceState, persistentState);
         setContentView(R.layout.display_sensor_readings);
 
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
         updateViewTask.set(scheduledExecutorService.scheduleAtFixedRate(this::updateView, 0, TIME_BETWEEN_VIEW_UPDATES_IN_MILLISECONDS, TimeUnit.MILLISECONDS));
     }
 
