@@ -21,6 +21,8 @@ import bolts.Continuation;
 
 public class MagnetometerDataPersistingObserver extends MetaWearAsyncSensorDataPersistingObserver {
 
+    public final static String SENSOR_NAME = MagnetometerDataPersistingObserver.class.getSimpleName();
+
     public MagnetometerDataPersistingObserver(Context context) {
         super(context);
     }

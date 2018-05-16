@@ -20,6 +20,8 @@ import bolts.Continuation;
 
 public class TemperatureDataPersistingObserver extends MetaWearForcedSensorDataPersistingObserver {
 
+    public final static String SENSOR_NAME = TemperatureDataPersistingObserver.class.getSimpleName();
+
     public TemperatureDataPersistingObserver(Context context) {
         super(context);
     }

@@ -21,6 +21,9 @@ import bolts.Continuation;
 
 public class GyroDataPersistingObserver extends MetaWearAsyncSensorDataPersistingObserver {
 
+    public final static String SENSOR_NAME = GyroDataPersistingObserver.class.getSimpleName();
+
+
     public GyroDataPersistingObserver(Context context) {
         super(context);
     }

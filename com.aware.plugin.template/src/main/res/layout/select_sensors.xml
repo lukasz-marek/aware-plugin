@@ -3,4 +3,45 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <Switch
+        android:id="@+id/accelerometer_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="@string/accelerometer_sensor_name" />
+
+    <Switch
+        android:id="@+id/altitude_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/altitude_sensor_name"
+        android:checked="true"/>
+
+    <Switch
+        android:id="@+id/gyroscope_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/gyroscope_sensor_name"
+        android:checked="true"/>
+
+    <Switch
+        android:id="@+id/temperature_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/temperature_sensor_name"
+        android:checked="true"/>
+
+    <Switch
+        android:id="@+id/pressure_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pressure_sensor_name"
+        android:checked="true"/>
+
+    <Switch
+        android:id="@+id/magnetometer_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/magnetometer_sensor_name"
+        android:checked="true"/>
 </LinearLayout>

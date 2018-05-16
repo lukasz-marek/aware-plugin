@@ -10,9 +10,11 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
+import android.widget.Switch;
 
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
@@ -20,6 +22,7 @@ import com.aware.plugin.template.communication.MessageRecipient;
 import com.aware.plugin.template.communication.MessageSender;
 import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.aware.plugin.template.communication.messages.Message;
+import com.aware.plugin.template.communication.messages.SensorSettingsChangedMessage;
 import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
 import com.aware.plugin.template.sensor.listener.impl.AccelerometerDataPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.AltitudeDataPersistingObserver;
@@ -28,13 +31,19 @@ import com.aware.plugin.template.sensor.listener.impl.MagnetometerDataPersisting
 import com.aware.plugin.template.sensor.listener.impl.PressureDataPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.TemperatureDataPersistingObserver;
 import com.aware.utils.Aware_Plugin;
+import com.google.common.collect.ImmutableMap;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.android.BtleService;
 import com.mbientlab.metawear.module.Led;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import bolts.Continuation;
 
@@ -46,9 +55,19 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
 
     private final AtomicReference<MetaWearBoard> board = new AtomicReference<>();
 
-    private final List<MetaWearSensorObserver> observers = new CopyOnWriteArrayList<>();
-
     private NotificationManager notificationManager;
+
+    private final Map<String, Supplier<MetaWearSensorObserver>> sensorCreators = ImmutableMap.<String, Supplier<MetaWearSensorObserver>>builder()
+            .put(AccelerometerDataPersistingObserver.SENSOR_NAME, () -> new AccelerometerDataPersistingObserver(this))
+            .put(AltitudeDataPersistingObserver.SENSOR_NAME, () -> new AltitudeDataPersistingObserver(this))
+            .put(GyroDataPersistingObserver.SENSOR_NAME, () -> new GyroDataPersistingObserver(this))
+            .put(MagnetometerDataPersistingObserver.SENSOR_NAME, () -> new MagnetometerDataPersistingObserver(this))
+            .put(PressureDataPersistingObserver.SENSOR_NAME, () -> new PressureDataPersistingObserver(this))
+            .put(TemperatureDataPersistingObserver.SENSOR_NAME, () -> new TemperatureDataPersistingObserver(this))
+            .build();
+
+
+    private final Map<String,MetaWearSensorObserver> activeSensors = new ConcurrentHashMap<>();
 
     @Override
     public void onCreate() {
@@ -105,6 +124,22 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
                 break;
             case DISCONNECT:
                 disconnectBoard();
+                break;
+            case SENSOR_SETTINGS_CHANGED:
+                toggleSensor(((SensorSettingsChangedMessage)message).getSensorName());
+                break;
+        }
+    }
+
+    private void toggleSensor(String sensorName){
+        final MetaWearBoard board = this.board.get();
+        if(activeSensors.containsKey(sensorName)){
+            activeSensors.get(sensorName).terminate();
+            activeSensors.remove(sensorName);
+        }else if (board != null){
+            final MetaWearSensorObserver observer = sensorCreators.get(sensorName).get();
+            activeSensors.put(sensorName, observer);
+            observer.register(board);
         }
     }
 
@@ -188,8 +223,8 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
     private synchronized void disconnectBoard() {
         if (isBoardConnected()) {
             try {
-                observers.forEach(MetaWearSensorObserver::terminate);
-                observers.clear();
+                activeSensors.values().forEach(MetaWearSensorObserver::terminate);
+                activeSensors.keySet().clear();
                 final Led ledModule = board.get().getModule(Led.class);
                 if (null != ledModule) {
                     ledModule.stop(true);
@@ -210,7 +245,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
     @Override
     public void onDestroy() {
         disconnectBoard();
-        this.observers.clear();
+        this.activeSensors.keySet().clear();
         cancelAllNotifications();
 
         MessageSender.discardIncomingMessages(this);
@@ -279,18 +314,19 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
 
     private synchronized void initializeBoardListeners() {
 
-        observers.add(new AccelerometerDataPersistingObserver( this));
-        observers.add(new GyroDataPersistingObserver(this));
-        observers.add(new MagnetometerDataPersistingObserver(this));
-        observers.add(new TemperatureDataPersistingObserver(this));
-        observers.add(new PressureDataPersistingObserver(this));
-        observers.add(new AltitudeDataPersistingObserver(this));
+        final SharedPreferences preferences = getSharedPreferences(SelectActiveSensorsActivity.SHARED_PREFERENCES_NAME, MODE_PRIVATE);
 
-        /* add more observers here, order does not matter at all*/
+        for(Map.Entry<Integer, String> entry : SelectActiveSensorsActivity.SENSOR_ID_TO_PREFERENCE_NAME_MAP.entrySet()){
+
+            final Boolean isSensorEnabled = preferences.getBoolean(entry.getValue(), true);
+            if(isSensorEnabled){
+                activeSensors.put(entry.getValue(), sensorCreators.get(entry.getValue()).get());
+            }
+        }
 
         final MetaWearBoard board = this.board.get();
 
-        observers.forEach(observer -> observer.register(board));
+        activeSensors.values().forEach(observer -> observer.register(board));
     }
 
     private void setupLed() {

@@ -22,6 +22,8 @@ import bolts.Continuation;
 
 public class PressureDataPersistingObserver extends MetaWearAsyncSensorDataPersistingObserver {
 
+    public final static String SENSOR_NAME = PressureDataPersistingObserver.class.getSimpleName();
+
     public PressureDataPersistingObserver(Context context) {
         super(context);
     }

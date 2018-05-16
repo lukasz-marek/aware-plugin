@@ -29,5 +29,11 @@
     <string name="select_active_sensors_preference_name">Select active sensors</string>
     <string name="select_active_sensors_preference_description">Select active sensors.</string>
 
+    <string name="accelerometer_sensor_name">Accelerometer</string>
+    <string name="altitude_sensor_name">Altitude</string>
+    <string name="gyroscope_sensor_name">Gyroscope</string>
+    <string name="pressure_sensor_name">Pressure</string>
+    <string name="magnetometer_sensor_name">Magnetometer</string>
+    <string name="temperature_sensor_name">Temperature</string>
 
 </resources>

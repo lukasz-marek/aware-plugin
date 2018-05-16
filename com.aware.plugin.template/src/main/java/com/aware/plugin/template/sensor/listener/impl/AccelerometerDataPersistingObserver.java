@@ -21,6 +21,8 @@ import bolts.Continuation;
 
 public final class AccelerometerDataPersistingObserver extends MetaWearAsyncSensorDataPersistingObserver {
 
+    public final static String SENSOR_NAME = AccelerometerDataPersistingObserver.class.getSimpleName();
+
     public AccelerometerDataPersistingObserver(Context context) {
         super(context);
     }

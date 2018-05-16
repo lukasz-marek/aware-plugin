@@ -18,6 +18,9 @@ import bolts.Continuation;
 
 public class AltitudeDataPersistingObserver extends MetaWearAsyncSensorDataPersistingObserver {
 
+    public final static String SENSOR_NAME = AltitudeDataPersistingObserver.class.getSimpleName();
+
+
     public AltitudeDataPersistingObserver(Context context) {
         super(context);
     }
@@ -32,28 +35,30 @@ public class AltitudeDataPersistingObserver extends MetaWearAsyncSensorDataPersi
     public void register(MetaWearBoard metaWearBoard) {
         final BarometerBosch baroBosch = metaWearBoard.getModule(BarometerBosch.class);
 
-        baroBosch.configure()
-                .filterCoeff(BarometerBosch.FilterCoeff.AVG_16)
-                .pressureOversampling(BarometerBosch.OversamplingMode.ULTRA_HIGH)
-                .standbyTime(TimeUnit.MILLISECONDS.convert(DATA_READ_LIMIT_IN_MILLISECONDS, TimeUnit.SECONDS))
-                .commit();
+        if(null != baroBosch) {
 
-        baroBosch.altitude().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+            baroBosch.configure()
+                    .filterCoeff(BarometerBosch.FilterCoeff.AVG_16)
+                    .pressureOversampling(BarometerBosch.OversamplingMode.ULTRA_HIGH)
+                    .standbyTime(TimeUnit.MILLISECONDS.convert(DATA_READ_LIMIT_IN_MILLISECONDS, TimeUnit.SECONDS))
+                    .commit();
 
-            processData(data);
+            baroBosch.altitude().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
 
-        })).continueWith((Continuation<Route, Void>) task -> {
+                processData(data);
 
-            addTerminationTask(() -> baroBosch.altitude().stop());
+            })).continueWith((Continuation<Route, Void>) task -> {
 
-
-            baroBosch.altitude().start();
-            baroBosch.start();
-
-            return null;
-        });
+                addTerminationTask(() -> baroBosch.altitude().stop());
 
 
+                baroBosch.altitude().start();
+                baroBosch.start();
+
+                return null;
+            });
+
+        }
     }
 
     @Override
