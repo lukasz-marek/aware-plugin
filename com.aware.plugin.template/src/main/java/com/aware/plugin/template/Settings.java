@@ -75,7 +75,9 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
         Preference setting = findPreference(key);
         if( setting.getKey().equals(STATUS_PLUGIN_TEMPLATE) ) {
             Aware.setSetting(this, key, sharedPreferences.getBoolean(key, false));
-            status.setChecked(sharedPreferences.getBoolean(key, false));
+            if(null != sharedPreferences) {
+                status.setChecked(sharedPreferences.getBoolean(key, false));
+            }
         }
         if (Aware.getSetting(this, STATUS_PLUGIN_TEMPLATE).equals("true")) {
             Aware.startPlugin(getApplicationContext(), "com.aware.plugin.template");
