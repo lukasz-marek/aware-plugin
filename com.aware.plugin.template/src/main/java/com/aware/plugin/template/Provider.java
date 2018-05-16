@@ -33,9 +33,7 @@ public class Provider extends ContentProvider {
     public static final String DB_MAGNETIC = "magnetic";
     public static final String DB_TEMPERATURE = "temperature";
     public static final String DB_PRESSURE = "pressure";
-
-
-
+    public static final String DB_ALTITUDE= "altitude";
 
     //For each table, add two indexes: DIR and ITEM. The index needs to always increment. Next one is 3, and so on.
     private static final int ACCELERATION_DIR = 1;
@@ -50,9 +48,11 @@ public class Provider extends ContentProvider {
     private static final int TEMPERATURE_DIR = 7;
     private static final int TEMPERATURE_ITEM = 8;
 
-
     private static final int PRESSURE_DIR = 9;
     private static final int PRESSURE_ITEM = 10;
+
+    private static final int ALTITUDE_DIR = 11;
+    private static final int ALTITUDE_ITEM = 12;
 
     //Put tables names in this array so AWARE knows what you have on the database
     public static final String[] DATABASE_TABLES = {
@@ -60,7 +60,8 @@ public class Provider extends ContentProvider {
             DB_VELOCITY,
             DB_MAGNETIC,
             DB_TEMPERATURE,
-            DB_PRESSURE
+            DB_PRESSURE,
+            DB_ALTITUDE
     };
 
     //These are columns that we need to sync data, don't change this!
@@ -127,6 +128,16 @@ public class Provider extends ContentProvider {
 
         //Note: integers and strings don't need a type prefix_
         public static final String PRESSURE_IN_PASCALS = "double_pressure"; //a double_ prefix makes a MySQL DOUBLE column
+
+    }
+
+    public static final class Altitude_Data implements AWAREColumns {
+        public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + DB_ALTITUDE);
+        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.aware.plugin.template.provider.altitude"; //modify me
+        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.com.aware.plugin.template.provider.altitude"; //modify me
+
+        //Note: integers and strings don't need a type prefix_
+        public static final String ALTITUDE = "double_altitude"; //a double_ prefix makes a MySQL DOUBLE column
 
     }
 
@@ -202,7 +213,7 @@ public class Provider extends ContentProvider {
 
     private HashMap<String, String> pressureMap;
 
-
+    private HashMap<String, String> altitudeMap;
 
     /**
      * Returns the provider authority that is dynamic
@@ -236,6 +247,9 @@ public class Provider extends ContentProvider {
 
         sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[4], PRESSURE_DIR);
         sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[4] + "/#", PRESSURE_ITEM);
+
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[5], ALTITUDE_DIR);
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[5] + "/#", ALTITUDE_ITEM);
 
         //Create each table hashmap so Android knows how to insert data to the database. Put ALL table fields.
         accelerationMap = new HashMap<>();
@@ -274,6 +288,13 @@ public class Provider extends ContentProvider {
         pressureMap.put(Pressure_Data.DEVICE_ID, Pressure_Data.DEVICE_ID);
         pressureMap.put(Pressure_Data.PRESSURE_IN_PASCALS, Pressure_Data.PRESSURE_IN_PASCALS);
 
+
+        altitudeMap = new HashMap<>();
+        altitudeMap.put(Altitude_Data._ID, Altitude_Data._ID);
+        altitudeMap.put(Altitude_Data.TIMESTAMP, Altitude_Data.TIMESTAMP);
+        altitudeMap.put(Altitude_Data.DEVICE_ID, Altitude_Data.DEVICE_ID);
+        altitudeMap.put(Altitude_Data.ALTITUDE, Altitude_Data.ALTITUDE);
+
         return true;
     }
 
@@ -301,6 +322,9 @@ public class Provider extends ContentProvider {
                 break;
             case PRESSURE_DIR:
                 count = database.delete(DATABASE_TABLES[4], selection, selectionArgs);
+                break;
+            case ALTITUDE_DIR:
+                count = database.delete(DATABASE_TABLES[5], selection, selectionArgs);
                 break;
             default:
                 database.endTransaction();
@@ -381,6 +405,17 @@ public class Provider extends ContentProvider {
                 }
                 database.endTransaction();
                 throw new SQLException("Failed to insert row into " + uri);
+            case ALTITUDE_DIR:
+                _id = database.insert(DATABASE_TABLES[5], Altitude_Data.DEVICE_ID, values);
+                database.setTransactionSuccessful();
+                database.endTransaction();
+                if (_id > 0) {
+                    Uri dataUri = ContentUris.withAppendedId(Altitude_Data.CONTENT_URI, _id);
+                    getContext().getContentResolver().notifyChange(dataUri, null);
+                    return dataUri;
+                }
+                database.endTransaction();
+                throw new SQLException("Failed to insert row into " + uri);
             default:
                 database.endTransaction();
                 throw new IllegalArgumentException("Unknown URI " + uri);
@@ -416,6 +451,10 @@ public class Provider extends ContentProvider {
             case PRESSURE_DIR:
                 qb.setTables(DATABASE_TABLES[4]);
                 qb.setProjectionMap(pressureMap); //the hashmap of the table
+                break;
+            case ALTITUDE_DIR:
+                qb.setTables(DATABASE_TABLES[5]);
+                qb.setProjectionMap(altitudeMap); //the hashmap of the table
                 break;
 
             default:
@@ -461,6 +500,10 @@ public class Provider extends ContentProvider {
                 return Pressure_Data.CONTENT_TYPE;
             case PRESSURE_ITEM:
                 return Pressure_Data.CONTENT_ITEM_TYPE;
+            case ALTITUDE_DIR:
+                return Altitude_Data.CONTENT_TYPE;
+            case ALTITUDE_ITEM:
+                return Altitude_Data.CONTENT_ITEM_TYPE;
 
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
@@ -496,6 +539,10 @@ public class Provider extends ContentProvider {
 
             case PRESSURE_DIR:
                 count = database.update(DATABASE_TABLES[4], values, selection, selectionArgs);
+                break;
+
+            case ALTITUDE_DIR:
+                count = database.update(DATABASE_TABLES[5], values, selection, selectionArgs);
                 break;
 
             default:

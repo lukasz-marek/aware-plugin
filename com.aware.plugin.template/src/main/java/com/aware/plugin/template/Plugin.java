@@ -22,6 +22,7 @@ import com.aware.plugin.template.communication.messages.DeviceSelectedMessage;
 import com.aware.plugin.template.communication.messages.Message;
 import com.aware.plugin.template.sensor.listener.MetaWearSensorObserver;
 import com.aware.plugin.template.sensor.listener.impl.AccelerometerDataPersistingObserver;
+import com.aware.plugin.template.sensor.listener.impl.AltitudeDataPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.GyroDataPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.MagnetometerDataPersistingObserver;
 import com.aware.plugin.template.sensor.listener.impl.PressureDataPersistingObserver;
@@ -283,6 +284,7 @@ public class Plugin extends Aware_Plugin implements MessageRecipient, ServiceCon
         observers.add(new MagnetometerDataPersistingObserver(this));
         observers.add(new TemperatureDataPersistingObserver(this));
         observers.add(new PressureDataPersistingObserver(this));
+        observers.add(new AltitudeDataPersistingObserver(this));
 
         /* add more observers here, order does not matter at all*/
 
