@@ -31,6 +31,7 @@
             android:exported="true" />
         <activity android:name=".ChooseDeviceActivity" />
         <activity android:name=".SelectActiveSensorsActivity" />
+        <activity android:name=".ActiveSensorReadingsDisplay" />
 
         <!-- Keep the ${applicationId} so there are no conflicts when merging this plugin as a library for reuse. Update the plugin_template string in values -->
         <provider
