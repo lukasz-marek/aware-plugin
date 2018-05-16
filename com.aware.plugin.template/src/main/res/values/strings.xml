@@ -26,7 +26,8 @@
     <string name="force_disconnect_button_title">Disconnect from current board</string>
     <string name="force_disconnect_button_summary">If connected to a board, disconnect from it.</string>
 
-
+    <string name="select_active_sensors_preference_name">Select active sensors</string>
+    <string name="select_active_sensors_preference_description">Select active sensors.</string>
 
 
 </resources>

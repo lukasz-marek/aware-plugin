@@ -24,4 +24,16 @@
     <Preference android:title="@string/force_disconnect_button_title"
         android:key="force_disconnect"
         android:summary="@string/force_disconnect_button_summary" />
+
+    <Preference
+        android:key="choose_device_pref"
+        android:title="@string/select_active_sensors_preference_name"
+        android:summary="@string/select_active_sensors_preference_description">
+
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.aware.plugin.template"
+            android:targetClass="com.aware.plugin.template.SelectActiveSensorsActivity"
+            />
+    </Preference>
 </PreferenceScreen>
