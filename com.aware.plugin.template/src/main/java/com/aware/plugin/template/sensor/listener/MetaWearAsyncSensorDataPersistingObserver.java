@@ -7,6 +7,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.RemoteException;
 
+import com.aware.plugin.template.ActiveSensorReadingsDisplay;
 import com.aware.plugin.template.Provider;
 import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
@@ -33,6 +34,8 @@ public abstract class MetaWearAsyncSensorDataPersistingObserver implements MetaW
 
     protected final static float DATA_PRODUCTION_FREQUENCY = 5f; // 5Hz
 
+    private final static SensorDataForwarder FORWARDER = ActiveSensorReadingsDisplay.FORWARDER;
+
 
     public MetaWearAsyncSensorDataPersistingObserver(Context context) {
         isTerminating.set(false);
@@ -50,8 +53,9 @@ public abstract class MetaWearAsyncSensorDataPersistingObserver implements MetaW
         if(!isTerminating.get()) {
 
             final ContentValues readingsToSave = convertToDatabaseRecord(sensorReadings);
-            saveSensorReadingsToDatabase(readingsToSave);
 
+            FORWARDER.forward(getForwardingId(), readingsToSave);
+            saveSensorReadingsToDatabase(readingsToSave);
         }
     }
 
@@ -90,4 +94,6 @@ public abstract class MetaWearAsyncSensorDataPersistingObserver implements MetaW
     }
 
     protected abstract Uri getDatabaseContentUri();
+
+    public abstract String getForwardingId();
 }

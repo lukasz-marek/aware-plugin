@@ -62,4 +62,9 @@ public final class AccelerometerDataPersistingObserver extends MetaWearAsyncSens
     protected Uri getDatabaseContentUri() {
         return Provider.Acceleration_Data.CONTENT_URI;
     }
+
+    @Override
+    public String getForwardingId() {
+        return SENSOR_NAME;
+    }
 }

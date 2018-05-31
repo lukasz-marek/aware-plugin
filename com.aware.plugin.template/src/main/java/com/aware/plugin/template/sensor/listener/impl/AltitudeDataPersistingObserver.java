@@ -64,4 +64,9 @@ public class AltitudeDataPersistingObserver extends MetaWearAsyncSensorDataPersi
     @Override
     protected Uri getDatabaseContentUri() {
         return Provider.Altitude_Data.CONTENT_URI;    }
+
+    @Override
+    public String getForwardingId() {
+        return SENSOR_NAME;
+    }
 }

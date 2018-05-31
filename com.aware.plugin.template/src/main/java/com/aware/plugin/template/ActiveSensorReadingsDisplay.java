@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
 
+import com.aware.plugin.template.sensor.listener.SensorDataForwarder;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -12,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ActiveSensorReadingsDisplay extends Activity {
+
+    public final static SensorDataForwarder FORWARDER = new SensorDataForwarder();
 
     private final static long TIME_BETWEEN_VIEW_UPDATES_IN_MILLISECONDS = TimeUnit.SECONDS.convert(1, TimeUnit.MILLISECONDS) / 3;
 

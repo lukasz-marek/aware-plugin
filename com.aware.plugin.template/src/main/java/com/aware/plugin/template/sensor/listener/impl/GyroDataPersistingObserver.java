@@ -67,4 +67,9 @@ public class GyroDataPersistingObserver extends MetaWearAsyncSensorDataPersistin
     protected Uri getDatabaseContentUri() {
         return Provider.Velocity_Data.CONTENT_URI;
     }
+
+    @Override
+    public String getForwardingId() {
+        return SENSOR_NAME;
+    }
 }

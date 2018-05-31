@@ -65,4 +65,9 @@ public class MagnetometerDataPersistingObserver extends MetaWearAsyncSensorDataP
     protected Uri getDatabaseContentUri() {
         return Provider.Magnetic_Data.CONTENT_URI;
     }
+
+    @Override
+    public String getForwardingId() {
+        return SENSOR_NAME;
+    }
 }

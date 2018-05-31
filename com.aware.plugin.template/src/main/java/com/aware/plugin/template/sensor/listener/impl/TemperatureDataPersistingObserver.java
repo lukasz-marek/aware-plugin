@@ -12,6 +12,8 @@ import com.mbientlab.metawear.Route;
 import com.mbientlab.metawear.Subscriber;
 import com.mbientlab.metawear.module.Temperature;
 
+import java.util.UUID;
+
 import bolts.Continuation;
 
 /**
@@ -51,5 +53,10 @@ public class TemperatureDataPersistingObserver extends MetaWearForcedSensorDataP
     @Override
     protected Uri getDatabaseContentUri() {
         return Provider.Temperature_Data.CONTENT_URI;
+    }
+
+    @Override
+    public String getForwardingId() {
+        return SENSOR_NAME;
     }
 }

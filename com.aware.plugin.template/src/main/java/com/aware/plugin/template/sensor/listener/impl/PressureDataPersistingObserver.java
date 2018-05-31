@@ -60,4 +60,9 @@ public class PressureDataPersistingObserver extends MetaWearAsyncSensorDataPersi
     protected Uri getDatabaseContentUri() {
         return Provider.Pressure_Data.CONTENT_URI;
     }
+
+    @Override
+    public String getForwardingId() {
+        return SENSOR_NAME;
+    }
 }
